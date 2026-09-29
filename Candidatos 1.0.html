@@ -12,9 +12,9 @@
         :root { 
             --bg-color: #F9F9F9; 
             --text-color: #333333; 
-            --brand-color: #005F6B; /* Cor principal Portal VIVA[cite: 18] */
-            --brand-highlight: #E6FF2A; /* Cor de destaque Portal VIVA[cite: 18] */
-            --brand-gray: #898A8E; /* Cor neutra Portal VIVA[cite: 18] */
+            --brand-color: #005F6B; 
+            --brand-highlight: #E6FF2A; 
+            --brand-gray: #898A8E; 
         }
         body { font-family: 'Roboto', Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: auto; padding-bottom: 60px; }
         #app { max-width: 600px; margin: 0 auto; position: relative; }
@@ -49,17 +49,20 @@
         .compare-select-container { text-align: right; margin-bottom: 20px; }
         .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; width: 100%; max-width: 250px;}
         
-        /* Gráficos de Barras */
+        /* Gráficos de Quadradinhos */
         .bar-container { margin-bottom: 20px; cursor: pointer; }
         .bar-label { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; text-align: center;}
-        .compare-row { display: flex; gap: 10px; align-items: flex-end; }
+        .compare-row { display: flex; gap: 10px; align-items: flex-start; }
         .track-col { flex: 1; display: flex; flex-direction: column; }
-        .track-name { font-size: 0.9rem; margin-bottom: 4px; color: #555; font-weight: bold; display: flex; align-items: center;}
-        .bar-track { background-color: #E0E0E0; border-radius: 8px; height: 28px; width: 100%; overflow: hidden; }
-        .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 10px; color: white; font-weight: bold; font-size: 0.9rem; transition: width 0.5s ease; }
+        .track-name { font-size: 0.9rem; margin-bottom: 6px; color: #555; font-weight: bold; display: flex; align-items: center;}
+        
+        .squares-row { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+        .square { width: 14px; height: 14px; border-radius: 3px; background-color: #E0E0E0; }
+        .square.filled-main { background-color: var(--brand-color); }
+        .square.filled-rival { background-color: var(--brand-gray); }
         
         /* Lista de Propostas (Eixos) */
-        .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 8px; }
+        .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 12px; }
         .propostas-lista h4 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #333; display: flex; align-items: center; }
         .propostas-lista ul { margin: 0; padding: 0; list-style: none; }
         
@@ -239,7 +242,7 @@
                     { curto: "Transparência algorítmica", original: "Vamos consolidar a transparência algoritmica e a rastreabilidade de conteúdo sintético, ancoradas no Centro Nacional de Transparência Algoritmica", subs: ["Inteligência artificial"] },
                     { curto: "Regulação redes", original: "avançar ainda mais na regulação democrática das redes sociais e das plataformas digitais", subs: ["Plataformas e conteúdo"] },
                     { curto: "Trabalho por plataforma", original: "Buscaremos inserir na regulação do trabalho mediado por plataforma o financiamento da previdência social", subs: ["Plataformas e conteúdo"] },
-                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados, cooperação científica", subs: ["Cibersegurança e soberania", "Inteligência artificial"] },
+                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados", subs: ["Cibersegurança e soberania", "Inteligência artificial"] },
                     { curto: "Salvaguardas em IA", original: "Vamos assegurar que a expansão de data centers e infraestruturas de inteligência artificial seja acompanhada de salvaguardas socioambientais", subs: ["Cibersegurança e soberania"] }
                 ]} 
             ] 
@@ -576,24 +579,33 @@
 
         candidatoAtual.eixos.forEach((eixo, i) => {
             const eixoRival = rival ? rival.eixos[i] : null;
-            const pct = (eixo.valor / 15) * 100;
-            const alfa = (0.5 + (eixo.valor / 15) * 0.5).toFixed(2);
-            const cor = "rgba(0, 95, 107, " + alfa + ")";
+            const max = 15; // Total máximo de propostas mapeadas
             
             let html = '<div class="bar-container" onclick="toggleEixo(\'prop-' + i + '\')">';
             html += '<div class="bar-label">' + eixo.nome + '</div>';
             html += '<div class="compare-row">';
-            html += '<div class="track-col"><span class="track-name">' + formatName(candidatoAtual.nome) + ' (' + eixo.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + cor + ';"></div></div></div>';
             
-            if(rival) {
-                const pctRival = (eixoRival.valor / 15) * 100;
-                const alfaRival = (0.5 + (eixoRival.valor / 15) * 0.5).toFixed(2);
-                const corRival = "rgba(137, 138, 142, " + alfaRival + ")";
-                html += '<div class="track-col"><span class="track-name">' + formatName(rival.nome) + ' (' + eixoRival.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pctRival + '%; background:' + corRival + ';"></div></div></div>';
+            // Candidato Principal
+            html += '<div class="track-col"><span class="track-name">' + formatName(candidatoAtual.nome) + ' (' + eixo.valor + ')</span>';
+            html += '<div class="squares-row">';
+            for(let j=0; j<max; j++) {
+                html += '<div class="square ' + (j < eixo.valor ? 'filled-main' : '') + '"></div>';
             }
             html += '</div></div>';
+            
+            // Adversário Comparado
+            if(rival) {
+                html += '<div class="track-col"><span class="track-name">' + formatName(rival.nome) + ' (' + eixoRival.valor + ')</span>';
+                html += '<div class="squares-row">';
+                for(let j=0; j<max; j++) {
+                    html += '<div class="square ' + (j < eixoRival.valor ? 'filled-rival' : '') + '"></div>';
+                }
+                html += '</div></div>';
+            }
+            
+            html += '</div></div>';
 
-            let propsHtml = '<div class="propostas-lista" id="prop-' + i + '" style="border-left: 6px solid ' + cor + '">';
+            let propsHtml = '<div class="propostas-lista" id="prop-' + i + '" style="border-left: 6px solid var(--brand-color)">';
             propsHtml += '<h4>' + formatName(candidatoAtual.nome) + '</h4><ul>';
             propsHtml += buildPropostasHTML(eixo);
             propsHtml += '</ul>';
