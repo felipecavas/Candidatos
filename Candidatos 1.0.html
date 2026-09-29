@@ -6,7 +6,7 @@
     <title>Agenda Digital 2026 - Propostas</title>
     <style>
         :root { --bg-color: #F9F9F9; --text-color: #333333; }
-        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: hidden; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: auto; padding-bottom: 60px; }
         #app { max-width: 600px; margin: 0 auto; position: relative; }
         
         .candidate-card { background: #FFFFFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
@@ -206,9 +206,17 @@
     }
 
     function toggleProps(id) {
-        const el = document.getElementById(id);
-        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    const el = document.getElementById(id);
+    if (el.style.display === 'block') {
+        el.style.display = 'none';
+    } else {
+        el.style.display = 'block';
+        // Aguarda um instante para a caixa abrir e desliza a tela suavemente até ela
+        setTimeout(() => {
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 150);
     }
+}
 
     function voltarParaLista() {
         document.getElementById('detalhe-convergencia').style.display = 'none';
