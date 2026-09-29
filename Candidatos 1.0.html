@@ -4,30 +4,43 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agenda Digital 2026 - Propostas</title>
+    <!-- Fonte Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg-color: #F9F9F9; --text-color: #333333; --brand-color: #1976D2; }
-        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: auto; padding-bottom: 60px; }
+        :root { 
+            --bg-color: #F9F9F9; 
+            --text-color: #333333; 
+            --brand-color: #005F6B; /* Cor principal Portal VIVA[cite: 18] */
+            --brand-highlight: #E6FF2A; /* Cor de destaque Portal VIVA[cite: 18] */
+            --brand-gray: #898A8E; /* Cor neutra Portal VIVA[cite: 18] */
+        }
+        body { font-family: 'Roboto', Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: auto; padding-bottom: 60px; }
         #app { max-width: 600px; margin: 0 auto; position: relative; }
         
+        /* Barra de Busca e Autocomplete */
         .search-container { margin-bottom: 24px; position: relative; z-index: 100; }
-        .search-input { width: 100%; box-sizing: border-box; padding: 16px; font-size: 1.1rem; border: 2px solid #1976D2; border-radius: 8px; outline: none; transition: border-color 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .search-input { width: 100%; box-sizing: border-box; padding: 16px; font-size: 1.1rem; border: 2px solid var(--brand-color); border-radius: 8px; outline: none; transition: border-color 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         .autocomplete-items { display: none; position: absolute; border: 1px solid #D4D4D4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .autocomplete-items div { padding: 14px 16px; cursor: pointer; background-color: #FFF; border-bottom: 1px solid #D4D4D4; font-size: 1.05rem; color: #333; }
-        .autocomplete-items div:hover { background-color: #E9F1F8; color: var(--brand-color); font-weight: bold; }
+        .autocomplete-items div:hover { background-color: var(--brand-highlight); color: var(--brand-color); font-weight: bold; }
 
         .btn-limpar-busca { display: none; background: #EEE; color: #333; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-bottom: 24px; width: 100%; font-size: 1.1rem; text-align: center; }
         .btn-limpar-busca:hover { background: #DDD; }
 
         #resultados-busca { display: none; }
         
+        /* Cards de Candidatos */
         .candidate-card { background: #FFFFFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
-        .candidate-card:hover { border-color: #999999; }
+        .candidate-card:hover { border-color: var(--brand-gray); }
         .candidate-profile { display: flex; align-items: center; gap: 16px; }
         .candidate-photo { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #EEEEEE; }
         .candidate-name { font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; }
         .candidate-total { font-size: 1.1rem; color: #666; background: #EEE; padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
 
+        /* Telas de Detalhe */
         #detalhe-candidato { display: none; background: #FFFFFF; padding: 20px; border-radius: 8px; border: 2px solid #E0E0E0; }
         .btn-voltar { background: none; border: none; color: var(--brand-color); font-size: 1.1rem; font-weight: bold; cursor: pointer; padding: 0 0 10px 0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
         .detalhe-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 2px solid #EEE; padding-bottom: 16px; }
@@ -36,6 +49,7 @@
         .compare-select-container { text-align: right; margin-bottom: 20px; }
         .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; width: 100%; max-width: 250px;}
         
+        /* Gráficos de Barras */
         .bar-container { margin-bottom: 20px; cursor: pointer; }
         .bar-label { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; text-align: center;}
         .compare-row { display: flex; gap: 10px; align-items: flex-end; }
@@ -44,12 +58,15 @@
         .bar-track { background-color: #E0E0E0; border-radius: 8px; height: 28px; width: 100%; overflow: hidden; }
         .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 10px; color: white; font-weight: bold; font-size: 0.9rem; transition: width 0.5s ease; }
         
+        /* Lista de Propostas (Eixos) */
         .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 8px; }
         .propostas-lista h4 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #333; display: flex; align-items: center; }
         .propostas-lista ul { margin: 0; padding: 0; list-style: none; }
         
+        /* Itens de Proposta Expansíveis */
         .prop-item-container { margin-bottom: 12px; border-bottom: 1px solid #E0E0E0; padding-bottom: 8px; }
         .prop-item-container:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        
         .prop-resumo { font-size: 1.1rem; color: #333; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; user-select: none; }
         .prop-resumo:hover { color: var(--brand-color); }
         
@@ -58,6 +75,7 @@
         
         .texto-original { display: none; background-color: #FFFFFF; border-left: 4px solid var(--brand-color); padding: 12px; margin-top: 8px; font-size: 1rem; color: #555; font-style: italic; border-radius: 0 4px 4px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
+        /* Estilos do Asterisco e Modal */
         .asterisk { color: var(--brand-color); cursor: pointer; padding: 0 4px; font-size: 1.2rem; display: inline-block; }
         .asterisk:hover { color: #0D47A1; }
         
@@ -71,7 +89,7 @@
 <div id="app">
 
     <div class="search-container">
-        <input type="text" id="input-busca" class="search-input" placeholder="Pesquisar por subtemas..." onkeyup="mostrarSugestoes()" autocomplete="off">
+        <input type="text" id="input-busca" class="search-input" placeholder="Pesquisar por tema..." onkeyup="mostrarSugestoes()" autocomplete="off">
         <div id="sugestoes-busca" class="autocomplete-items"></div>
     </div>
 
@@ -173,8 +191,8 @@
                     { curto: "Oferta de conectividade", original: "Vamos reduzir o déficit de fibra óptica que ainda atinge 11% dos municípios", subs: ["Infraestrutura e conectividade"] },
                     { curto: "Ampliar 5G no campo", original: "ampliar o 5G no campo, com prioridade para Norte, Nordeste e periferias", subs: ["Infraestrutura e conectividade"] },
                     { curto: "Letramento Digital", original: "Instituiremos uma Política Nacional de Letramento Digital, estruturada para capacitar cidadãos de todas as idades a navegar criticamente na rede", subs: ["Letramento digital"] },
-                    { curto: "Ampliar letramento", original: "Seguiremos fortalecendo iniciativas de letramento digital buscando ampliar o acesso dos idosos aos serviços públicos digitais", subs: ["Letramento digital", "Inclusão de grupos específicos"] },
-                    { curto: "Novo PAC", original: "Vamos universalizar este serviço no próximo mandato, garantindo acesso a essa dimensão cada vez mais central para a qualidade da educação", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Ampliar letramento p/ Idosos", original: "Seguiremos fortalecendo iniciativas de letramento digital buscando ampliar o acesso dos idosos aos serviços públicos digitais", subs: ["Letramento digital", "Inclusão de grupos específicos"] },
+                    { curto: "Novo PAC na educação", original: "Vamos universalizar este serviço no próximo mandato, garantindo acesso a essa dimensão cada vez mais central para a qualidade da educação", subs: ["Infraestrutura e conectividade"] },
                     { curto: "FUST", original: "Manteremos o uso do FUST, que voltou a operar depois de mais de duas décadas, como instrumentos de apoio a investimentos em conectividade em todo o país", subs: ["Infraestrutura e conectividade"] },
                     { curto: "Conectividade Rural", original: "Fomentaremos a expansão da conectividade no mundo rural, para elevar a produtividade e facilitar a gestão das propriedades", subs: ["Infraestrutura e conectividade"] }
                 ]}, 
@@ -221,7 +239,7 @@
                     { curto: "Transparência algorítmica", original: "Vamos consolidar a transparência algoritmica e a rastreabilidade de conteúdo sintético, ancoradas no Centro Nacional de Transparência Algoritmica", subs: ["Inteligência artificial"] },
                     { curto: "Regulação redes", original: "avançar ainda mais na regulação democrática das redes sociais e das plataformas digitais", subs: ["Plataformas e conteúdo"] },
                     { curto: "Trabalho por plataforma", original: "Buscaremos inserir na regulação do trabalho mediado por plataforma o financiamento da previdência social", subs: ["Plataformas e conteúdo"] },
-                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados", subs: ["Cibersegurança e soberania", "Inteligência artificial"] },
+                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados, cooperação científica", subs: ["Cibersegurança e soberania", "Inteligência artificial"] },
                     { curto: "Salvaguardas em IA", original: "Vamos assegurar que a expansão de data centers e infraestruturas de inteligência artificial seja acompanhada de salvaguardas socioambientais", subs: ["Cibersegurança e soberania"] }
                 ]} 
             ] 
@@ -559,7 +577,8 @@
         candidatoAtual.eixos.forEach((eixo, i) => {
             const eixoRival = rival ? rival.eixos[i] : null;
             const pct = (eixo.valor / 15) * 100;
-            const cor = "hsl(210, 80%, " + (75 - (eixo.valor / 15) * 45) + "%)";
+            const alfa = (0.5 + (eixo.valor / 15) * 0.5).toFixed(2);
+            const cor = "rgba(0, 95, 107, " + alfa + ")";
             
             let html = '<div class="bar-container" onclick="toggleEixo(\'prop-' + i + '\')">';
             html += '<div class="bar-label">' + eixo.nome + '</div>';
@@ -568,7 +587,9 @@
             
             if(rival) {
                 const pctRival = (eixoRival.valor / 15) * 100;
-                html += '<div class="track-col"><span class="track-name">' + formatName(rival.nome) + ' (' + eixoRival.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pctRival + '%; background:hsl(0, 0%, ' + (80 - (eixoRival.valor / 15) * 40) + '%);"></div></div></div>';
+                const alfaRival = (0.5 + (eixoRival.valor / 15) * 0.5).toFixed(2);
+                const corRival = "rgba(137, 138, 142, " + alfaRival + ")";
+                html += '<div class="track-col"><span class="track-name">' + formatName(rival.nome) + ' (' + eixoRival.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pctRival + '%; background:' + corRival + ';"></div></div></div>';
             }
             html += '</div></div>';
 
