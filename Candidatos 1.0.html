@@ -9,18 +9,26 @@
         body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: auto; padding-bottom: 60px; }
         #app { max-width: 600px; margin: 0 auto; position: relative; }
         
+        .search-container { margin-bottom: 24px; position: relative; z-index: 100; }
+        .search-input { width: 100%; box-sizing: border-box; padding: 16px; font-size: 1.1rem; border: 2px solid #1976D2; border-radius: 8px; outline: none; transition: border-color 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        .autocomplete-items { display: none; position: absolute; border: 1px solid #D4D4D4; border-bottom: none; border-top: none; z-index: 99; top: 100%; left: 0; right: 0; border-radius: 0 0 8px 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .autocomplete-items div { padding: 14px 16px; cursor: pointer; background-color: #FFF; border-bottom: 1px solid #D4D4D4; font-size: 1.05rem; color: #333; }
+        .autocomplete-items div:hover { background-color: #E9F1F8; color: var(--brand-color); font-weight: bold; }
+
+        .btn-limpar-busca { display: none; background: #EEE; color: #333; border: none; padding: 8px 16px; border-radius: 20px; font-weight: bold; cursor: pointer; margin-bottom: 24px; width: 100%; font-size: 1.1rem; text-align: center; }
+        .btn-limpar-busca:hover { background: #DDD; }
+
+        #resultados-busca { display: none; }
+        
         .candidate-card { background: #FFFFFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
         .candidate-card:hover { border-color: #999999; }
         .candidate-profile { display: flex; align-items: center; gap: 16px; }
         .candidate-photo { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #EEEEEE; }
         .candidate-name { font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; }
         .candidate-total { font-size: 1.1rem; color: #666; background: #EEE; padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
-        
-        .card-convergencia { background: #FFFFFF; border-color: #B0BEC5; padding: 20px 16px; justify-content: center; }
-        .card-convergencia .candidate-name { color: #455A64; font-size: 1.2rem; }
-        .separator { border: none; border-top: 2px dashed #CCC; margin: 24px 0; }
 
-        #detalhe-candidato, #detalhe-convergencia { display: none; background: #FFFFFF; padding: 20px; border-radius: 8px; border: 2px solid #E0E0E0; }
+        #detalhe-candidato { display: none; background: #FFFFFF; padding: 20px; border-radius: 8px; border: 2px solid #E0E0E0; }
         .btn-voltar { background: none; border: none; color: var(--brand-color); font-size: 1.1rem; font-weight: bold; cursor: pointer; padding: 0 0 10px 0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
         .detalhe-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 2px solid #EEE; padding-bottom: 16px; }
         .detalhe-header-info { display: flex; align-items: center; gap: 16px; font-size: 1.5rem; font-weight: bold; }
@@ -42,7 +50,6 @@
         
         .prop-item-container { margin-bottom: 12px; border-bottom: 1px solid #E0E0E0; padding-bottom: 8px; }
         .prop-item-container:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        
         .prop-resumo { font-size: 1.1rem; color: #333; cursor: pointer; display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; user-select: none; }
         .prop-resumo:hover { color: var(--brand-color); }
         
@@ -62,21 +69,18 @@
 </head>
 <body>
 <div id="app">
-    <div id="lista-candidatos">
-        <div id="lista-cards-cand"></div>
-        <hr class="separator">
-        <div class="candidate-card card-convergencia" onclick="abrirConvergencia()">
-            <span class="candidate-name">No que os candidatos concordam</span>
-        </div>
+
+    <div class="search-container">
+        <input type="text" id="input-busca" class="search-input" placeholder="Pesquisar por subtema (ex: Saúde, IA, Impostos)..." onkeyup="mostrarSugestoes()" autocomplete="off">
+        <div id="sugestoes-busca" class="autocomplete-items"></div>
     </div>
 
-    <div id="detalhe-convergencia">
-        <button class="btn-voltar" onclick="voltarParaLista()">← Voltar</button>
-        <div class="detalhe-header">
-            <div class="detalhe-header-info">No que os candidatos concordam</div>
-        </div>
-        <p style="color: #666; font-style: italic; margin-bottom: 24px; font-size: 1.1rem;">Toque nas barras para ler os temas.</p>
-        <div id="grafico-convergencias"></div>
+    <button class="btn-limpar-busca" id="btn-limpar" onclick="limparBusca()">Voltar para a lista de candidatos</button>
+
+    <div id="resultados-busca"></div>
+
+    <div id="conteudo-inicial">
+        <div id="lista-cards-cand"></div>
     </div>
 
     <div id="detalhe-candidato">
@@ -105,52 +109,60 @@
 <script>
     var pymChild = new pym.Child({ polling: 500 });
 
+    const subcategoriasOficiais = [
+        "Infraestrutura e conectividade", "Acessibilidade econômica", "Dispositivos", "Letramento digital", "Inclusão de grupos específicos",
+        "Financiamento à pesquisa", "Instituições e carreira científica", "Relação universidade-empresa", "Infraestrutura de pesquisa", "Formação de talentos", "Áreas estratégicas",
+        "Capital e financiamento", "Ambiente de negócios", "Ecossistema e habitats", "Compras públicas de inovação", "Internacionalização", "Tributação da inovação",
+        "Serviços digitais ao cidadão", "Infraestrutura e dados do Estado", "Identidade digital", "Transparência e dados abertos", "IA no setor público", "Compras e gestão", "Coordenação federativa",
+        "Inteligência artificial", "Plataformas e conteúdo", "Dados pessoais e privacidade", "Concorrência digital", "Cibersegurança e soberania", "Infância e adolescência", "Outros (regulação)"
+    ];
+
     const candidatosData = [
         { 
             id: "flavio", nome: "Flávio Bolsonaro", foto: "FBR280002551544_div.jpg", total: 34, 
             eixos: [ 
                 { nome: "Inclusão Digital", valor: 8, max: 15, propostas: [
-                    { curto: "Bônus de Internet para as Mulheres", original: "Todos os serviços oferecidos nos espaços físicos estarão disponíveis no aplicativo, que vai conectar as mulheres de todo o Brasil" },
-                    { curto: "Conectividade às localidades de baixa cobertura", original: "Garantiremos pacotes de internet para que nenhuma mulher deixe de estudar, se capacitar, buscar emprego, empreender ou pedir ajuda por falta de conexão" },
-                    { curto: "Escola Brasil por Elas: formação em IA e programação", original: "ela oferecerá formação em inteligência artificial, programação, marketing digital, finanças, idiomas" },
-                    { curto: "Pacote de Conexão para toda a população", original: "Vamos garantir pacotes de conexão para que nenhum brasileiro deixe de estudar, se capacitar, buscar emprego, empreender ou pedir ajuda por falta de internet" },
-                    { curto: "Robótica e Infraestrutura", original: "Vamos ainda levar robótica, computadores, tablets e internet às escolas" },
-                    { curto: "Economia Digital no currículo escolar", original: "incluir no currículo competências para a economia digital, preparando o jovem para lidar com o próprio dinheiro, empreender e usar as novas tecnologias" }
+                    { curto: "Bônus de Internet para as Mulheres", original: "Todos os serviços oferecidos nos espaços físicos estarão disponíveis no aplicativo, que vai conectar as mulheres de todo o Brasil", subs: ["Serviços digitais ao cidadão", "Inclusão de grupos específicos"] },
+                    { curto: "Conectividade às localidades de baixa cobertura", original: "vamos levar conectividade às localidades de baixa cobertura, priorizando escolas, áreas rurais e regiões de fronteira", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Escola Brasil por Elas: formação em IA e programação", original: "ela oferecerá formação em inteligência artificial, programação, marketing digital, finanças, idiomas", subs: ["Letramento digital", "Inclusão de grupos específicos"] },
+                    { curto: "Pacote de Conexão para toda a população", original: "Vamos garantir pacotes de conexão para que nenhum brasileiro deixe de estudar, se capacitar, buscar emprego, empreender ou pedir ajuda por falta de internet", subs: ["Acessibilidade econômica"] },
+                    { curto: "Robótica e Infraestrutura", original: "Vamos ainda levar robótica, computadores, tablets e internet às escolas", subs: ["Infraestrutura e conectividade", "Dispositivos"] },
+                    { curto: "Economia Digital no currículo escolar", original: "incluir no currículo competências para a economia digital, preparando o jovem para lidar com o próprio dinheiro, empreender e usar as novas tecnologias", subs: ["Letramento digital"] }
                 ]}, 
                 { nome: "Fomento a CT&I", valor: 8, max: 15, propostas: [
-                    { curto: "Política Nacional de Formação de Talentos", original: "criar a Política Nacional de Formação de Talentos, para identificar e desenvolver as habilidades que o mercado de trabalho vai exigir" },
-                    { curto: "Transferir ensino superior", original: "No ensino superior, vamos transferir a governança para o Ministério da Ciência, Tecnologia e Inovações, unificando ciência e ensino superior sob o mesmo teto" },
-                    { curto: "CAPES e CNPQ", original: "A CAPES e o CNPq passarão a priorizar o impacto produtivo, a inovação e a transferência de tecnologia" },
-                    { curto: "Aproximar empresas e universidades", original: "as instituições de ensino poderão receber recursos em troca da formação dos profissionais de que o país precisa" },
-                    { curto: "Bioeconomia", original: "impulsionar a bioeconomia, com biotecnologia, fármacos, cosméticos e novos materiais a partir da biodiversidade" },
-                    { curto: "Incentivo a tecnologias", original: "Incentivaremos amplo espectro de tecnologias disponiveis, com foco em inovação como drones e inteligência artificial" },
-                    { curto: "Patentes de IA", original: "vamos elevar a participação brasileira nas patentes de inteligência artificial" },
-                    { curto: "Gestão das Universidades", original: "aproximar universidades e empresas, com a gestão das universidades integrada à ciência e à tecnologia" }
+                    { curto: "Política Nacional de Formação de Talentos", original: "criar a Política Nacional de Formação de Talentos, para identificar e desenvolver as habilidades que o mercado de trabalho vai exigir", subs: ["Formação de talentos"] },
+                    { curto: "Transferir ensino superior", original: "No ensino superior, vamos transferir a governança para o Ministério da Ciência, Tecnologia e Inovações, unificando ciência e ensino superior sob o mesmo teto", subs: ["Instituições e carreira científica"] },
+                    { curto: "CAPES e CNPQ", original: "A CAPES e o CNPq passarão a priorizar o impacto produtivo, a inovação e a transferência de tecnologia", subs: ["Financiamento à pesquisa", "Relação universidade-empresa"] },
+                    { curto: "Aproximar empresas e universidades", original: "as instituições de ensino poderão receber recursos em troca da formação dos profissionais de que o país precisa", subs: ["Relação universidade-empresa", "Formação de talentos"] },
+                    { curto: "Bioeconomia", original: "impulsionar a bioeconomia, com biotecnologia, fármacos, cosméticos e novos materiais a partir da biodiversidade", subs: ["Áreas estratégicas"] },
+                    { curto: "Incentivo a tecnologias", original: "Incentivaremos amplo espectro de tecnologias disponiveis, com foco em inovação como drones e inteligência artificial", subs: ["Áreas estratégicas"] },
+                    { curto: "Patentes de IA", original: "vamos elevar a participação brasileira nas patentes de inteligência artificial", subs: ["Áreas estratégicas"] },
+                    { curto: "Gestão das Universidades", original: "aproximar universidades e empresas, com a gestão das universidades integrada à ciência e à tecnologia", subs: ["Relação universidade-empresa"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: [
-                    { curto: "Estado indutor", original: "o Estado atuará como indutor, pelas compras públicas, pelo GovTech e pelo investimento em pesquisa" },
-                    { curto: "Parques tecnológicos", original: "fortalecer os parques tecnológicos" },
-                    { curto: "Expandir incubadoras", original: "expandir as incubadoras" },
-                    { curto: "Startups", original: "apoiar as startups de base tecnológica" },
-                    { curto: "Polo Global de data centers", original: "transformar o país em polo global de data centers sustentáveis, aproveitando a matriz elétrica renovável" }
+                    { curto: "Estado indutor", original: "o Estado atuará como indutor, pelas compras públicas, pelo GovTech e pelo investimento em pesquisa", subs: ["Compras públicas de inovação"] },
+                    { curto: "Parques tecnológicos", original: "fortalecer os parques tecnológicos", subs: ["Ecossistema e habitats"] },
+                    { curto: "Expandir incubadoras", original: "expandir as incubadoras", subs: ["Ecossistema e habitats"] },
+                    { curto: "Startups", original: "apoiar as startups de base tecnológica", subs: ["Ecossistema e habitats"] },
+                    { curto: "Polo Global de data centers", original: "transformar o país em polo global de data centers sustentáveis, aproveitando a matriz elétrica renovável", subs: ["Ecossistema e habitats"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 10, max: 15, propostas: [
-                    { curto: "Digitalizar serviços federais", original: "Vamos digitalizar 100% dos serviços públicos do Governo Federal passíveis de digitalização, sob o principio do digital by design" },
-                    { curto: "Identidade Digital Única", original: "A identidade digital única, com autenticação integrada ao Gov.br, permitirá que assistentes automatizados montem a trilha de serviços de cada cidadão, inclusive por comando de voz" },
-                    { curto: "Assistentes automatizados", original: "Assistentes automatizados vão indicar a cada brasileiro os serviços e beneficios a que ele tem direito e o caminho para obtê-los" },
-                    { curto: "Prontuário eletrônico único", original: "Vamos implantar o prontuário eletrônico único, vinculado ao CPF e integrado ao Gov.br, interoperável entre as redes pública e privada" },
-                    { curto: "Digitalização do SUS", original: "vamos completar a digitalização do SUS e usar inteligência artificial para agilizar o agendamento de consultas e exames" },
-                    { curto: "Digitalizar processos do INSS", original: "Vamos investir em tecnologia e digitalizar os processos do INSS, dando continuidade ao caminho do Meu INSS" },
-                    { curto: "App Central da Mulher", original: "Todos os serviços oferecidos nos espaços físicos estarão disponíveis no aplicativo, que vai conectar as mulheres de todo o Brasil" },
-                    { curto: "IA denúncias", original: "Vamos modernizar e integrar os canais de denúncia, reunindo o Ligue 180, as delegacias online" },
-                    { curto: "Banco de Vagas", original: "vamos modernizar a intermediação de mão de obra, com um banco nacional de vagas conectado ao RH das empresas" },
-                    { curto: "IA de apoio à prevenção", original: "Com inteligência artificial de apoio à prevenção, o sistema poderá identificar quem corre maior risco de adoecer" }
+                    { curto: "Digitalizar serviços federais", original: "Vamos digitalizar 100% dos serviços públicos do Governo Federal passíveis de digitalização, sob o principio do digital by design", subs: ["Serviços digitais ao cidadão", "Compras e gestão"] },
+                    { curto: "Identidade Digital Única", original: "A identidade digital única, com autenticação integrada ao Gov.br, permitirá que assistentes automatizados montem a trilha de serviços de cada cidadão, inclusive por comando de voz", subs: ["Identidade digital", "IA no setor público"] },
+                    { curto: "Assistentes automatizados", original: "Assistentes automatizados vão indicar a cada brasileiro os serviços e beneficios a que ele tem direito e o caminho para obtê-los", subs: ["IA no setor público"] },
+                    { curto: "Prontuário eletrônico único", original: "Vamos implantar o prontuário eletrônico único, vinculado ao CPF e integrado ao Gov.br, interoperável entre as redes pública e privada", subs: ["Serviços digitais ao cidadão", "Infraestrutura e dados do Estado"] },
+                    { curto: "Digitalização do SUS", original: "vamos completar a digitalização do SUS e usar inteligência artificial para agilizar o agendamento de consultas e exames", subs: ["Serviços digitais ao cidadão", "IA no setor público"] },
+                    { curto: "Digitalizar processos do INSS", original: "Vamos investir em tecnologia e digitalizar os processos do INSS, dando continuidade ao caminho do Meu INSS", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "App Central da Mulher", original: "Todos os serviços oferecidos nos espaços físicos estarão disponíveis no aplicativo, que vai conectar as mulheres de todo o Brasil", subs: ["Serviços digitais ao cidadão", "Inclusão de grupos específicos"] },
+                    { curto: "IA denúncias", original: "Vamos modernizar e integrar os canais de denúncia, reunindo o Ligue 180, as delegacias online", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Banco de Vagas", original: "vamos modernizar a intermediação de mão de obra, com um banco nacional de vagas conectado ao RH das empresas", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "IA de apoio à prevenção", original: "Com inteligência artificial de apoio à prevenção, o sistema poderá identificar quem corre maior risco de adoecer", subs: ["IA no setor público"] }
                 ]}, 
                 { nome: "Regulação", valor: 4, max: 15, propostas: [
-                    { curto: "Liberdade de inovar", original: "Proporemos uma legislação voltada à liberdade de criar e inovar, inspirada nas melhores práticas internacionais" },
-                    { curto: "Defesa cibernética", original: "Vamos fortalecer a defesa cibernética do país, protegendo serviços públicos, infraestrutura crítica e cidadãos contra ataques e fraudes" },
-                    { curto: "Fim da Censura", original: "acabar com qualquer estrutura estatal que funcione como um" },
-                    { curto: "Revogar atos", original: "vamos revogar todos os atos que o atual governo produziu para silenciar seus críticos" }
+                    { curto: "Liberdade de inovar", original: "Proporemos uma legislação voltada à liberdade de criar e inovar, inspirada nas melhores práticas internacionais", subs: ["Outros (regulação)"] },
+                    { curto: "Defesa cibernética", original: "Vamos fortalecer a defesa cibernética do país, protegendo serviços públicos, infraestrutura crítica e cidadãos contra ataques e fraudes", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Fim da Censura", original: "acabar com qualquer estrutura estatal que funcione como um órgão de censura", subs: ["Plataformas e conteúdo"] },
+                    { curto: "Revogar atos", original: "vamos revogar todos os atos que o atual governo produziu para silenciar seus críticos", subs: ["Plataformas e conteúdo"] }
                 ]} 
             ] 
         },
@@ -158,89 +170,89 @@
             id: "lula", nome: "Lula", foto: "FBR280002542548_div.jpg", total: 45, 
             eixos: [ 
                 { nome: "Inclusão Digital", valor: 7, max: 15, propostas: [
-                    { curto: "Oferta de conectividade", original: "Vamos reduzir o déficit de fibra óptica que ainda atinge 11% dos municípios" },
-                    { curto: "Ampliar 5G no campo", original: "ampliar o 5G no campo, com prioridade para Norte, Nordeste e periferias" },
-                    { curto: "Letramento Digital", original: "Instituiremos uma Política Nacional de Letramento Digital, estruturada para capacitar cidadãos de todas as idades a navegar criticamente na rede, combater a desinformação, proteger sua privacidade" },
-                    { curto: "Ampliar letramento", original: "Seguiremos fortalecendo iniciativas de letramento digital buscando ampliar o acesso dos idosos aos serviços públicos digitais e reduzir sua vulnerabilidade a fraudes e crimes cibernéticos" },
-                    { curto: "Novo PAC", original: "Vamos universalizar este serviço no próximo mandato, garantindo acesso a essa dimensão cada vez mais central para a qualidade da educação" },
-                    { curto: "FUST", original: "Manteremos o uso do FUST, que voltou a operar depois de mais de duas décadas, como instrumentos de apoio a investimentos em conectividade em todo o país" },
-                    { curto: "Conectividade Rural", original: "Fomentaremos a expansão da conectividade no mundo rural, para elevar a produtividade e facilitar a gestão das propriedades" }
+                    { curto: "Oferta de conectividade", original: "Vamos reduzir o déficit de fibra óptica que ainda atinge 11% dos municípios", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Ampliar 5G no campo", original: "ampliar o 5G no campo, com prioridade para Norte, Nordeste e periferias", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Letramento Digital", original: "Instituiremos uma Política Nacional de Letramento Digital, estruturada para capacitar cidadãos de todas as idades a navegar criticamente na rede", subs: ["Letramento digital"] },
+                    { curto: "Ampliar letramento", original: "Seguiremos fortalecendo iniciativas de letramento digital buscando ampliar o acesso dos idosos aos serviços públicos digitais", subs: ["Letramento digital", "Inclusão de grupos específicos"] },
+                    { curto: "Novo PAC", original: "Vamos universalizar este serviço no próximo mandato, garantindo acesso a essa dimensão cada vez mais central para a qualidade da educação", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "FUST", original: "Manteremos o uso do FUST, que voltou a operar depois de mais de duas décadas, como instrumentos de apoio a investimentos em conectividade em todo o país", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Conectividade Rural", original: "Fomentaremos a expansão da conectividade no mundo rural, para elevar a produtividade e facilitar a gestão das propriedades", subs: ["Infraestrutura e conectividade"] }
                 ]}, 
                 { nome: "Fomento a CT&I", valor: 9, max: 15, propostas: [
-                    { curto: "Conhecimento Brasil", original: "Daremos sequência a esta ação, para que cientistas brasileiros possam permanecer ou retornar ao Brasil, contribuindo para o desenvolvimento tecnológico e inovação no País" },
-                    { curto: "Uso do FNDCT", original: "Asseguraremos ainda a continuidade do uso estratégico do FNDCT" },
-                    { curto: "Infraestrutura computacional", original: "Vamos avançar numa infraestrutura computacional soberana, com supercomputadores desenvolvidos e operados por instituições nacionais" },
-                    { curto: "LLMs em Português", original: "Vamos desenvolver e sustentar modelos de linguagem em português e outras linguas, voltados aos problemas do País, apoiados numa plataforma nacional de dados para treinamento e avaliação" },
-                    { curto: "IA no setor produtivo", original: "Vamos acelerar a difusão da inteligência artificial no setor produtivo, com foco em agro, saúde e serviços financeiros" },
-                    { curto: "Investir em P&D", original: "Vamos investir em instituições públicas de pesquisa e desenvolvimento que já desenvolvem IA e na indústria que produz tecnologia de hardware e software de alto desempenho no país" },
-                    { curto: "Formação de talentos", original: "Também formaremos talentos para consolidar um hub nacional de competências digitais, reforçando a articulação entre polos de inovação, universidades, centros de pesquisa e setor produtivo" },
-                    { curto: "Embrapa", original: "A Embrapa será fortalecida para consolidar a liderança do Brasil em tecnologia agropecuária tropical, com investimentos em biotecnologia, edição genômica e cultivares mais resistentes a pragas e secas" },
-                    { curto: "Base Industrial de Defesa", original: "fortaleceremos a Base Industrial e Tecnológica de Defesa, de modo a assegurar maior autonomia nacional nesse campo e estimular inovações com impactos positivos sobre o conjunto da economia" }
+                    { curto: "Conhecimento Brasil", original: "Daremos sequência a esta ação, para que cientistas brasileiros possam permanecer ou retornar ao Brasil, contribuindo para o desenvolvimento tecnológico e inovação no País", subs: ["Formação de talentos"] },
+                    { curto: "Uso do FNDCT", original: "Asseguraremos ainda a continuidade do uso estratégico do FNDCT", subs: ["Financiamento à pesquisa"] },
+                    { curto: "Infraestrutura computacional", original: "Vamos avançar numa infraestrutura computacional soberana, com supercomputadores desenvolvidos e operados por instituições nacionais", subs: ["Infraestrutura de pesquisa"] },
+                    { curto: "LLMs em Português", original: "Vamos desenvolver e sustentar modelos de linguagem em português e outras linguas, voltados aos problemas do País", subs: ["Áreas estratégicas"] },
+                    { curto: "IA no setor produtivo", original: "Vamos acelerar a difusão da inteligência artificial no setor produtivo, com foco em agro, saúde e serviços financeiros", subs: ["Áreas estratégicas"] },
+                    { curto: "Investir em P&D", original: "Vamos investir em instituições públicas de pesquisa e desenvolvimento que já desenvolvem IA e na indústria que produz tecnologia", subs: ["Infraestrutura de pesquisa", "Áreas estratégicas"] },
+                    { curto: "Formação de talentos", original: "Também formaremos talentos para consolidar um hub nacional de competências digitais, reforçando a articulação entre polos de inovação", subs: ["Formação de talentos", "Relação universidade-empresa"] },
+                    { curto: "Embrapa", original: "A Embrapa será fortalecida para consolidar a liderança do Brasil em tecnologia agropecuária tropical, com investimentos em biotecnologia", subs: ["Instituições e carreira científica", "Áreas estratégicas"] },
+                    { curto: "Base Industrial de Defesa", original: "fortaleceremos a Base Industrial e Tecnológica de Defesa, de modo a assegurar maior autonomia nacional nesse campo", subs: ["Áreas estratégicas"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 4, max: 15, propostas: [
-                    { curto: "Indústria 4.0", original: "fortalecer a inserção do Brasil nas tecnologias da Indústria 4.0, internalizando tecnologias, verticalizando cadeias produtivas e promovendo um amplo processo de digitalização e renovação do maquinário industrial" },
-                    { curto: "Fomentar tecnologia", original: "vamos fomentar o desenvolvimento do ecossistema nacional de tecnologia digital, desde a cadeia de datacenters até os serviços de nuvem, com destaque para o fortalecimento da inteligência artificial desenvolvida por empresas brasileiras" },
-                    { curto: "Apoio PMEs", original: "ampliaremos investimentos para apoiar o crescimento de pequenas e médias empresas em setores dinâmicos e portadores de futuro, por meio de fundos de participação estruturados pelos bancos públicos" },
-                    { curto: "Brasil Mais Produtivo", original: "O Brasil Mais Produtivo (B+P) será ampliado para alcançar mais micro, pequenas e médias empresas e fortalecer o empreendedorismo, especialmente por meio de linhas de crédito voltadas à digitalização e ao aumento da produtividade dessas empresas" }
+                    { curto: "Indústria 4.0", original: "fortalecer a inserção do Brasil nas tecnologias da Indústria 4.0, internalizando tecnologias", subs: ["Ecossistema e habitats"] },
+                    { curto: "Fomentar tecnologia", original: "vamos fomentar o desenvolvimento do ecossistema nacional de tecnologia digital, desde a cadeia de datacenters até os serviços de nuvem", subs: ["Ecossistema e habitats"] },
+                    { curto: "Apoio PMEs", original: "ampliaremos investimentos para apoiar o crescimento de pequenas e médias empresas em setores dinâmicos e portadores de futuro", subs: ["Capital e financiamento"] },
+                    { curto: "Brasil Mais Produtivo", original: "O Brasil Mais Produtivo será ampliado para alcançar mais micro, pequenas e médias empresas e fortalecer o empreendedorismo", subs: ["Capital e financiamento"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 10, max: 15, propostas: [
-                    { curto: "Plataformas públicas", original: "Vamos buscar alavancar novas iniciativas que melhorem e facilitem a experiência de uso de plataformas públicas, como o Gov. br" },
-                    { curto: "Personalização de serviços", original: "na construção de infraestruturas públicas digitais que deem suporte à personalização dos serviços" },
-                    { curto: "Compras do Estado", original: "vamos aprimorar os mecanismos de utilização do poder de compra do Estado em todos os níveis da federação" },
-                    { curto: "Portal da Transparência", original: "O Portal da Transparência receberá investimentos para evoluir para uma plataforma inteligente baseada em dados abertos e inteligência artificial" },
-                    { curto: "Celular Seguro", original: "Continuaremos expandindo e aprimorando o Programa Celular Seguro, que já conta com mais de 4 milhões de usuários cadastrados" },
-                    { curto: "Sistemas interfederativos", original: "Essa integração dos sistemas de informação interfederativos permitirá disponibilizar diretamente no celular a marcação de consultas nas UBS e os resultados de exames" },
-                    { curto: "IA no SUS", original: "Vamos acelerar a utilização de inteligência artificial para a triagem, a priorização de casos graves, a regulação por risco clínico e o diagnóstico em áreas com escassez de especialistas" },
-                    { curto: "Modernização tecnológica e saúde", original: "A modernização tecnológica iniciada no atual governo terá continuidade, com mais salas telessaúde, telecirurgia, cirurgia robótica e serviços e hospitais inteligentes" },
-                    { curto: "Atenção especializada", original: "Aprimoraremos ainda mais a regulação do acesso à atenção especializada, garantindo maior transparência das filas e utilizando inteligência artificial, com fila única digital e ordenada pelo risco clinico" },
-                    { curto: "Supercentro telediagnóstico", original: "Consolidaremos o Supercentro Brasil de telediagnóstico do câncer" }
+                    { curto: "Plataformas públicas", original: "Vamos buscar alavancar novas iniciativas que melhorem e facilitem a experiência de uso de plataformas públicas, como o Gov. br", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Personalização de serviços", original: "na construção de infraestruturas públicas digitais que deem suporte à personalização dos serviços", subs: ["Infraestrutura e dados do Estado"] },
+                    { curto: "Compras do Estado", original: "vamos aprimorar os mecanismos de utilização do poder de compra do Estado em todos os níveis da federação", subs: ["Compras públicas de inovação"] },
+                    { curto: "Portal da Transparência", original: "O Portal da Transparência receberá investimentos para evoluir para uma plataforma inteligente baseada em dados abertos e inteligência artificial", subs: ["Transparência e dados abertos", "IA no setor público"] },
+                    { curto: "Celular Seguro", original: "Continuaremos expandindo e aprimorando o Programa Celular Seguro", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Sistemas interfederativos", original: "Essa integração dos sistemas de informação interfederativos permitirá disponibilizar diretamente no celular a marcação de consultas", subs: ["Serviços digitais ao cidadão", "Coordenação federativa"] },
+                    { curto: "IA no SUS", original: "Vamos acelerar a utilização de inteligência artificial para a triagem, a priorização de casos graves, a regulação por risco clínico", subs: ["IA no setor público"] },
+                    { curto: "Modernização tecnológica", original: "A modernização tecnológica iniciada no atual governo terá continuidade, com mais salas telessaúde, telecirurgia, cirurgia robótica", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Atenção especializada", original: "Aprimoraremos ainda mais a regulação do acesso à atenção especializada, garantindo maior transparência das filas e utilizando inteligência artificial", subs: ["IA no setor público", "Serviços digitais ao cidadão"] },
+                    { curto: "Supercentro telediagnóstico", original: "Consolidaremos o Supercentro Brasil de telediagnóstico do câncer", subs: ["Serviços digitais ao cidadão"] }
                 ]}, 
                 { nome: "Regulação", valor: 15, max: 15, propostas: [
-                    { curto: "Conselho Nacional pela Soberania Digital", original: "Propomos a criação de um Conselho Nacional pela Soberania Digital, com participação da sociedade" },
-                    { curto: "Aprimoramento do ECA Digital", original: "aprimoramento do ECA Digital" },
-                    { curto: "Uso de telas", original: "regulamentação do uso de telas por faixa etária" },
-                    { curto: "Plataformas de jogos", original: "regulamentação das plataformas de jogos e dos ambientes digitais" },
-                    { curto: "Crimes cibernéticos", original: "Reforçaremos a prevenção, a inteligência, a investigação e a repressão qualificada aos crimes financeiros e cibernéticos, assegurando a proteção dos direitos no ambiente digital" },
-                    { curto: "Direito autoral", original: "Trabalharemos pela aprovação de lei do direito autoral em ambiente digital" },
-                    { curto: "Regulação da IA", original: "a regulamentação da inteligência artificial, para que músicos, autores e artistas sejam pagos quando as plataformas usarem conteúdo brasileiro" },
-                    { curto: "Soberania Digital", original: "Garantiremos a soberania digital para que o Brasil e os brasileiros tenham capacidade de desenvolver, operar, regular e governar tecnologias estratégicas e as infraestruturas críticas" },
-                    { curto: "Data centers", original: "a instalação dos datacenters em solo brasileiro deve prever contrapartidas de conteúdo local e capacidade computacional para o mercado interno" },
-                    { curto: "Economia de dados", original: "estabeleceremos regras e infraestrutura para uma economia de dados" },
-                    { curto: "Transparência algorítmica", original: "Vamos consolidar a transparência algoritmica e a rastreabilidade de conteúdo sintético, ancoradas no Centro Nacional de Transparência Algoritmica" },
-                    { curto: "Regulação democrática das redes", original: "avançar ainda mais na regulação democrática das redes sociais e das plataformas digitais, de modo a impedir que elas difundam desinformação, acolham campanhas de ódio e outras formas de comunicação nocivas para a democracia" },
-                    { curto: "Trabalho por plataforma", original: "Buscaremos inserir na regulação do trabalho mediado por plataforma o financiamento da previdência social e a cobertura adequada para aposentadoria, incapacidade temporária, acidentes, maternidade ou demais contingências sociais" },
-                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados, cooperação científica, transferência de tecnologias estratégicas e regulamentação democrática das plataformas digitais e da IA" },
-                    { curto: "Salvaguardas em IA", original: "Vamos assegurar que a expansão de data centers e infraestruturas de inteligência artificial seja acompanhada de salvaguardas socioambientais obrigatórias" }
+                    { curto: "Soberania Digital", original: "Propomos a criação de um Conselho Nacional pela Soberania Digital, com participação da sociedade", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Aprimoramento do ECA Digital", original: "aprimoramento do ECA Digital", subs: ["Infância e adolescência"] },
+                    { curto: "Uso de telas", original: "regulamentação do uso de telas por faixa etária", subs: ["Infância e adolescência"] },
+                    { curto: "Plataformas de jogos", original: "regulamentação das plataformas de jogos e dos ambientes digitais", subs: ["Infância e adolescência", "Plataformas e conteúdo"] },
+                    { curto: "Crimes cibernéticos", original: "Reforçaremos a prevenção, a inteligência, a investigação e a repressão qualificada aos crimes financeiros e cibernéticos", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Direito autoral", original: "Trabalharemos pela aprovação de lei do direito autoral em ambiente digital", subs: ["Plataformas e conteúdo"] },
+                    { curto: "Regulação da IA", original: "a regulamentação da inteligência artificial, para que músicos, autores e artistas sejam pagos quando as plataformas usarem conteúdo brasileiro", subs: ["Inteligência artificial", "Plataformas e conteúdo"] },
+                    { curto: "Soberania Digital 2", original: "Garantiremos a soberania digital para que o Brasil e os brasileiros tenham capacidade de desenvolver, operar, regular e governar tecnologias estratégicas", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Data centers", original: "a instalação dos datacenters em solo brasileiro deve prever contrapartidas de conteúdo local e capacidade computacional", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Economia de dados", original: "estabeleceremos regras e infraestrutura para uma economia de dados", subs: ["Outros (regulação)"] },
+                    { curto: "Transparência algorítmica", original: "Vamos consolidar a transparência algoritmica e a rastreabilidade de conteúdo sintético, ancoradas no Centro Nacional de Transparência Algoritmica", subs: ["Inteligência artificial"] },
+                    { curto: "Regulação redes", original: "avançar ainda mais na regulação democrática das redes sociais e das plataformas digitais", subs: ["Plataformas e conteúdo"] },
+                    { curto: "Trabalho por plataforma", original: "Buscaremos inserir na regulação do trabalho mediado por plataforma o financiamento da previdência social", subs: ["Plataformas e conteúdo"] },
+                    { curto: "Governança internacional", original: "tecnologias digitais e a inteligência artificial, baseada na soberania digital com proteção de dados", subs: ["Cibersegurança e soberania", "Inteligência artificial"] },
+                    { curto: "Salvaguardas em IA", original: "Vamos assegurar que a expansão de data centers e infraestruturas de inteligência artificial seja acompanhada de salvaguardas socioambientais", subs: ["Cibersegurança e soberania"] }
                 ]} 
             ] 
         },
         { 
             id: "renan", nome: "Renan Santos", foto: "FBR280002540694_div.jpg", total: 16, 
             eixos: [ 
-                { nome: "Inclusão Digital", valor: 0, max: 15, propostas: [{ curto: "Sem propostas registradas neste eixo.", original: "" }] }, 
+                { nome: "Inclusão Digital", valor: 0, max: 15, propostas: [{ curto: "Sem propostas registradas neste eixo.", original: "", subs: [] }] }, 
                 { nome: "Fomento a CT&I", valor: 7, max: 15, propostas: [
-                    { curto: "Dados genômicos", original: "criação do maior banco de dados genômicos da América Latina a partir do projeto Genomas Brasil" },
-                    { curto: "Talentos em IA", original: "reter, formar e repatriar os jovens talentosos do Brasil, garantindo que contribuam para o desenvolvim" },
-                    { curto: "Agro-Bio Nacional", original: "Pela Base Agro-Bio Nacional, visamos à unificação técnica do maior acervo de dados" },
-                    { curto: "Drones agrícolas", original: "viabilizando também a criação de drones agrícolas e robótica movidos por IA proprietária brasileira" },
-                    { curto: "Lab Abaporu", original: "O Projeto Abaporu será um laboratório nacional de inteligência artificial com capital privado majoritário, governança independente" },
-                    { curto: "Retenção de talentos", original: "Criar um programa de retenção de talentos no Brasil para mitigar a fuga de cérebros no país" },
-                    { curto: "Genomas no SUS", original: "a integração do Programa Genomas Brasil ao Prontuário Eletrônico do SUS" }
+                    { curto: "Dados genômicos", original: "criação do maior banco de dados genômicos da América Latina a partir do projeto Genomas Brasil", subs: ["Áreas estratégicas", "Infraestrutura e dados do Estado"] },
+                    { curto: "Talentos em IA", original: "reter, formar e repatriar os jovens talentosos do Brasil, garantindo que contribuam para o desenvolvim", subs: ["Formação de talentos"] },
+                    { curto: "Agro-Bio Nacional", original: "Pela Base Agro-Bio Nacional, visamos à unificação técnica do maior acervo de dados", subs: ["Áreas estratégicas"] },
+                    { curto: "Drones agrícolas", original: "viabilizando também a criação de drones agrícolas e robótica movidos por IA proprietária brasileira", subs: ["Áreas estratégicas"] },
+                    { curto: "Lab Abaporu", original: "O Projeto Abaporu será um laboratório nacional de inteligência artificial com capital privado majoritário, governança independente", subs: ["Infraestrutura de pesquisa"] },
+                    { curto: "Retenção de talentos", original: "Criar um programa de retenção de talentos no Brasil para mitigar a fuga de cérebros no país", subs: ["Formação de talentos"] },
+                    { curto: "Genomas no SUS", original: "a integração do Programa Genomas Brasil ao Prontuário Eletrônico do SUS", subs: ["Áreas estratégicas", "Infraestrutura e dados do Estado"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: [
-                    { curto: "Impostos", original: "reduzir impostos sobre empresas de tecnologia" },
-                    { curto: "Stock options", original: "facilitar a distribuição de stock options" },
-                    { curto: "Venture capital", original: "maximizar o investimento em venture capital por fundos brasileiros" },
-                    { curto: "Data centers", original: "Favorece políticas de incentivo para a instalação de datacenters" },
-                    { curto: "ZEAIs", original: "As Zonas Econômicas de Alta Inteligência (ZEAIs) serão a aplicação das ZEEs à inteligência artificial" }
+                    { curto: "Impostos", original: "reduzir impostos sobre empresas de tecnologia", subs: ["Tributação da inovação"] },
+                    { curto: "Stock options", original: "facilitar a distribuição de stock options", subs: ["Ambiente de negócios"] },
+                    { curto: "Venture capital", original: "maximizar o investimento em venture capital por fundos brasileiros", subs: ["Capital e financiamento"] },
+                    { curto: "Data centers", original: "Favorece políticas de incentivo para a instalação de datacenters", subs: ["Ecossistema e habitats"] },
+                    { curto: "ZEAIs", original: "As Zonas Econômicas de Alta Inteligência (ZEAIs) serão a aplicação das ZEEs à inteligência artificial", subs: ["Ecossistema e habitats"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 5, max: 15, propostas: [
-                    { curto: "Telemedicina", original: "Criação de um sistema digital de saúde, que combine telemedicina, diagnósticos por IA, monitoramento clínico e histórico permanente" },
-                    { curto: "Vigilância preditiva", original: "com a inclusão de vigilância epidemiológica preditiva em tempo real" },
-                    { curto: "Prontuário interoperável", original: "Criação do PRONTO (Prontuário Eletrônico Nacional Interoperável) que irá conectar a atenção primária, os serviços especializados, os hospitais públicos e privados, laboratórios e farmácias" }
+                    { curto: "Telemedicina", original: "Criação de um sistema digital de saúde, que combine telemedicina, diagnósticos por IA, monitoramento clínico e histórico permanente", subs: ["Serviços digitais ao cidadão", "IA no setor público"] },
+                    { curto: "Vigilância preditiva", original: "com a inclusão de vigilância epidemiológica preditiva em tempo real", subs: ["IA no setor público"] },
+                    { curto: "Prontuário interoperável", original: "Criação do PRONTO (Prontuário Eletrônico Nacional Interoperável) que irá conectar a atenção primária, os serviços especializados, os hospitais públicos e privados", subs: ["Serviços digitais ao cidadão", "Infraestrutura e dados do Estado"] }
                 ]}, 
                 { nome: "Regulação", valor: 1, max: 15, propostas: [
-                    { curto: "Arcabouço regulatório", original: "o arcabouço regulatório que permita o Brasil tornar-se o maior exportador de inferência computacional do hemisfério ocidental" }
+                    { curto: "Arcabouço regulatório", original: "o arcabouço regulatório que permita o Brasil tornar-se o maior exportador de inferência computacional do hemisfério ocidental", subs: ["Outros (regulação)"] }
                 ]} 
             ] 
         },
@@ -248,49 +260,49 @@
             id: "zema", nome: "Romeu Zema", foto: "FBR280002539826_div.jpg", total: 35, 
             eixos: [ 
                 { nome: "Inclusão Digital", valor: 6, max: 15, propostas: [
-                    { curto: "Espectro 5G", original: "Estruturar a abertura de novas faixas de espectro para o 5G, atraindo novos concorrentes para baixar preços" },
-                    { curto: "Internet na saúde", original: "Garantir acesso a internet de qualidade em todas as unidades públicas de saúde do país" },
-                    { curto: "Rural", original: "avançando na conectividade rural com banda larga e 5G" },
-                    { curto: "Telemedicina", original: "assegurando infraestrutura mínima e conectividade que viabilizem ações de telemedicina" },
-                    { curto: "Modernizar formação", original: "fortalecendo o ensino de idiomas, competências digitais, hospitalidade, inovação e empreendedorismo" },
-                    { curto: "Modernizar BNCC", original: "com prioridade para a alfabetização, o raciocínio lógico, as ciências e as competências digitais" }
+                    { curto: "Espectro 5G", original: "Estruturar a abertura de novas faixas de espectro para o 5G, atraindo novos concorrentes para baixar preços", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Internet na saúde", original: "Garantir acesso a internet de qualidade em todas as unidades públicas de saúde do país", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Rural", original: "avançando na conectividade rural com banda larga e 5G", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Telemedicina conectividade", original: "assegurando infraestrutura mínima e conectividade que viabilizem ações de telemedicina", subs: ["Infraestrutura e conectividade", "Inclusão de grupos específicos"] },
+                    { curto: "Modernizar formação", original: "fortalecendo o ensino de idiomas, competências digitais, hospitalidade, inovação e empreendedorismo", subs: ["Letramento digital"] },
+                    { curto: "Modernizar BNCC", original: "com prioridade para a alfabetização, o raciocínio lógico, as ciências e as competências digitais", subs: ["Letramento digital"] }
                 ]}, 
                 { nome: "Fomento a CT&I", valor: 13, max: 15, propostas: [
-                    { curto: "Ensino superior para MCTI", original: "Transferir a gestão do ensino superior do Ministério da Educação para o Ministério de Ciência e Tecnologia" },
-                    { curto: "Incentivos", original: "Criar incentivos financeiros para universidades e institutos federais com base em indicadores objetivos de qualidade da gestão e acadêmica" },
-                    { curto: "Bolsas STEM", original: "Ampliar as vagas e o financiamento de bolsas de pesquisa para as áreas de ciências, tecnologia, engenharia e matemática" },
-                    { curto: "Vistos", original: "Simplificar os processos de reconhecimento de qualificações e de concessão de vistos para especialistas" },
-                    { curto: "Instituições com histórico", original: "Concentrar recursos de pesquisa, ciência e tecnologia nas instituições com histórico comprovado de produção científica relevante" },
-                    { curto: "Flexibilização docente", original: "Permitir que as universidades tenham professores e pesquisadores de excelência sem que necessariamente o mesmo profissional precise exercer as duas funções" },
-                    { curto: "Desburocratização P&D", original: "Criar um ambiente regulatório que facilite a instalação de centros de pesquisa e desenvolvimento, com apoio do setor produtivo dentro das universidades públicas" },
-                    { curto: "Cursos com setor privado", original: "Estruturar programas de formação técnica e superior em setores de fronteira tecnológica, em parceria com o setor privado" },
-                    { curto: "Investimento estrangeiro", original: "Facilitar a entrada de capital internacional e privado para P&D no campo, conectando centros de pesquisa nacionais aos internacionais" },
-                    { curto: "Saúde e universidades", original: "Facilitar a conexão entre universidades e empresas dos setores médico e farmacêutico para fortalecer a inovação" }
+                    { curto: "Ensino superior para MCTI", original: "Transferir a gestão do ensino superior do Ministério da Educação para o Ministério de Ciência e Tecnologia", subs: ["Instituições e carreira científica"] },
+                    { curto: "Incentivos", original: "Criar incentivos financeiros para universidades e institutos federais com base em indicadores objetivos de qualidade da gestão e acadêmica", subs: ["Instituições e carreira científica"] },
+                    { curto: "Bolsas STEM", original: "Ampliar as vagas e o financiamento de bolsas de pesquisa para as áreas de ciências, tecnologia, engenharia e matemática", subs: ["Formação de talentos"] },
+                    { curto: "Vistos", original: "Simplificar os processos de reconhecimento de qualificações e de concessão de vistos para especialistas", subs: ["Formação de talentos"] },
+                    { curto: "Instituições com histórico", original: "Concentrar recursos de pesquisa, ciência e tecnologia nas instituições com histórico comprovado de produção científica relevante", subs: ["Financiamento à pesquisa"] },
+                    { curto: "Flexibilização docente", original: "Permitir que as universidades tenham professores e pesquisadores de excelência sem que necessariamente o mesmo profissional precise exercer as duas funções", subs: ["Instituições e carreira científica"] },
+                    { curto: "Desburocratização P&D", original: "Criar um ambiente regulatório que facilite a instalação de centros de pesquisa e desenvolvimento, com apoio do setor produtivo dentro das universidades públicas", subs: ["Relação universidade-empresa"] },
+                    { curto: "Cursos com setor privado", original: "Estruturar programas de formação técnica e superior em setores de fronteira tecnológica, em parceria com o setor privado", subs: ["Formação de talentos"] },
+                    { curto: "Investimento estrangeiro", original: "Facilitar a entrada de capital internacional e privado para P&D no campo, conectando centros de pesquisa nacionais aos internacionais", subs: ["Relação universidade-empresa"] },
+                    { curto: "Saúde e universidades", original: "Facilitar a conexão entre universidades e empresas dos setores médico e farmacêutico para fortalecer a inovação", subs: ["Relação universidade-empresa"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: [
-                    { curto: "Venture capital", original: "Aperfeiçoar os mecanismos do mercado de capitais brasileiro, como regras de venture capital, estruturação de fundos, garantias de investimento e segurança juridica para vesting e equity" },
-                    { curto: "Data centers intl.", original: "Atrair investimentos internacionais em inovação e tecnologia, principalmente em data centers, aproveitando a energia barata em excesso" },
-                    { curto: "Energia limpa IA", original: "Aproveitar a abundância de energia limpa e competitiva do pais para acelerar a eletrificação da economia e atrair indústrias intensivas em energia, inteligência artificial e data centers" },
-                    { curto: "Capital estrangeiro", original: "Facilitar a entrada de investimentos estrangeiros no Brasil, removendo barreiras e fazendo road shows junto com parceiros privados" },
-                    { curto: "Startups nos hospitais", original: "Conectar startups e empresas inovadoras do setor da saúde aos hospitais universitários" }
+                    { curto: "Venture capital", original: "Aperfeiçoar os mecanismos do mercado de capitais brasileiro, como regras de venture capital, estruturação de fundos, garantias de investimento e segurança juridica para vesting e equity", subs: ["Capital e financiamento"] },
+                    { curto: "Data centers intl.", original: "Atrair investimentos internacionais em inovação e tecnologia, principalmente em data centers, aproveitando a energia barata em excesso", subs: ["Ecossistema e habitats"] },
+                    { curto: "Energia limpa IA", original: "Aproveitar a abundância de energia limpa e competitiva do pais para acelerar a eletrificação da economia e atrair indústrias intensivas em energia, inteligência artificial e data centers", subs: ["Ecossistema e habitats"] },
+                    { curto: "Capital estrangeiro", original: "Facilitar a entrada de investimentos estrangeiros no Brasil, removendo barreiras e fazendo road shows junto com parceiros privados", subs: ["Internacionalização"] },
+                    { curto: "Startups nos hospitais", original: "Conectar startups e empresas inovadoras do setor da saúde aos hospitais universitários", subs: ["Ecossistema e habitats"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 10, max: 15, propostas: [
-                    { curto: "Digitalização pública", original: "Aumentar a qualidade de entrega dos serviços públicos por meio da digitalização do governo" },
-                    { curto: "Custo do serviço", original: "Obrigar o governo a divulgar quanto custa cada serviço para que o cidadão saiba o que paga" },
-                    { curto: "Tecnologias de mercado", original: "Usar tecnologia, parcerias e soluções já desenvolvidas pelo mercado, capacitando gestores para usarem essas ferramentas existentes" },
-                    { curto: "Integração dados", original: "Padronizar sistemas e integrar bases de dados para que estados e municípios operem juntos" },
-                    { curto: "Dados abertos", original: "avançando com a digitalização do governo e a divulgação dos dados em formato aberto, acabando com a possibilidade de sigilos de 100 anos" },
-                    { curto: "Prontuário eletrônico", original: "Construir um registro nacional de saúde unificado e sob controle do cidadão por meio do prontuário eletrônico" },
-                    { curto: "Integração público/privado", original: "Fazer com que os sistemas de saúde públicos e privados se comuniquem e alimentem o registro nacional" },
-                    { curto: "Otimização filas", original: "com apoio de sistemas de inteligência artificial para otimizar a gestão das filas e direcionar cada paciente ao serviço mais adequado" },
-                    { curto: "Telemedicina", original: "Expandir o acesso a consultas médicas e ao monitoramento de doenças por meio da telemedicina" },
-                    { curto: "Transparência apoio", original: "Publicar em formato aberto quem recebeu recursos de apoio público à inovação, com nome do beneficiário, valor e resultado alcançado" }
+                    { curto: "Digitalização pública", original: "Aumentar a qualidade de entrega dos serviços públicos por meio da digitalização do governo", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Custo do serviço", original: "Obrigar o governo a divulgar quanto custa cada serviço para que o cidadão saiba o que paga", subs: ["Transparência e dados abertos"] },
+                    { curto: "Tecnologias de mercado", original: "Usar tecnologia, parcerias e soluções já desenvolvidas pelo mercado, capacitando gestores para usarem essas ferramentas existentes", subs: ["Compras e gestão"] },
+                    { curto: "Integração dados", original: "Padronizar sistemas e integrar bases de dados para que estados e municípios operem juntos", subs: ["Coordenação federativa", "Infraestrutura e dados do Estado"] },
+                    { curto: "Dados abertos", original: "avançando com a digitalização do governo e a divulgação dos dados em formato aberto, acabando com a possibilidade de sigilos de 100 anos", subs: ["Transparência e dados abertos"] },
+                    { curto: "Prontuário eletrônico", original: "Construir um registro nacional de saúde unificado e sob controle do cidadão por meio do prontuário eletrônico", subs: ["Serviços digitais ao cidadão", "Infraestrutura e dados do Estado"] },
+                    { curto: "Integração público/privado", original: "Fazer com que os sistemas de saúde públicos e privados se comuniquem e alimentem o registro nacional", subs: ["Infraestrutura e dados do Estado"] },
+                    { curto: "Otimização filas", original: "com apoio de sistemas de inteligência artificial para otimizar a gestão das filas e direcionar cada paciente ao serviço mais adequado", subs: ["IA no setor público"] },
+                    { curto: "Telemedicina", original: "Expandir o acesso a consultas médicas e ao monitoramento de doenças por meio da telemedicina", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Transparência apoio", original: "Publicar em formato aberto quem recebeu recursos de apoio público à inovação, com nome do beneficiário, valor e resultado alcançado", subs: ["Transparência e dados abertos"] }
                 ]}, 
                 { nome: "Regulação", valor: 4, max: 15, propostas: [
-                    { curto: "Edição gênica", original: "modernização do marco regulatório para edição gênica de sementes" },
-                    { curto: "Vedar exclusão de perfis", original: "Vedar a exclusão de perfis e a moderação de opiniões pelas plataformas, inclusive por determinação judicial" },
-                    { curto: "IA restrita a danos", original: "evitando uma regulação precoce e ampla da inteligência artificial, garantindo segurança jurídica para o setor e regulando pontualmente apenas onde surgirem danos concretos comprovados" },
-                    { curto: "Fim do abuso", original: "tipificar como abuso de autoridade qualquer ato estatal de censura, remoção arbitrária de conteúdo ou restrição injustificada da expressão" }
+                    { curto: "Edição gênica", original: "modernização do marco regulatório para edição gênica de sementes", subs: ["Outros (regulação)", "Áreas estratégicas"] },
+                    { curto: "Vedar exclusão de perfis", original: "Vedar a exclusão de perfis e a moderação de opiniões pelas plataformas, inclusive por determinação judicial", subs: ["Plataformas e conteúdo"] },
+                    { curto: "IA restrita a danos", original: "evitando uma regulação precoce e ampla da inteligência artificial, garantindo segurança jurídica para o setor e regulando pontualmente apenas onde surgirem danos concretos comprovados", subs: ["Inteligência artificial"] },
+                    { curto: "Fim do abuso", original: "tipificar como abuso de autoridade qualquer ato estatal de censura, remoção arbitrária de conteúdo ou restrição injustificada da expressão", subs: ["Plataformas e conteúdo"] }
                 ]} 
             ] 
         },
@@ -298,61 +310,61 @@
             id: "caiado", nome: "Ronaldo Caiado", foto: "FBR280002551932_div.jpg", total: 47, 
             eixos: [ 
                 { nome: "Inclusão Digital", valor: 9, max: 15, propostas: [
-                    { curto: "Metas rural", original: "Estabelecer metas de conectividade rural até 2030" },
-                    { curto: "Internet municípios", original: "aplicar de forma efetiva os recursos setoriais de universalização, hoje subutilizados, para levar conectividade de qualidade a todos os municípios" },
-                    { curto: "FUST escolas", original: "Colocar o FUST a serviço de escolas, unidades de saúde e conectividade rural" },
-                    { curto: "Universalizar energia", original: "Levar energia confiável e conectividade significativa a comunidades, escolas, unidades de saúde e atividades produtivas" },
-                    { curto: "Internet qualidade", original: "Garantir internet de qualidade, dispositivos compartilhados, plataformas interoperáveis e proteção de dados" },
-                    { curto: "Infra digital", original: "Acelerar a expansão das redes pelo compartilhamento da infraestrutura passiva, postes, dutos, torres e fibra" },
-                    { curto: "Satélites", original: "Levar fibra e backhaul ao interior e à Amazônia, acelerar infovias, usar satélites de órbita baixa como complemento regulado" },
-                    { curto: "Recondicionamento", original: "ampliar recondicionamento e doação de equipamentos" },
-                    { curto: "Reduzir imposto", original: "reduzir a carga tributária do smartphone de entrada, como uma forma de subsídio e inclusão digital da população de baixa renda" }
+                    { curto: "Metas rural", original: "Estabelecer metas de conectividade rural até 2030", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Internet municípios", original: "aplicar de forma efetiva os recursos setoriais de universalização, hoje subutilizados, para levar conectividade de qualidade a todos os municípios", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "FUST escolas", original: "Colocar o FUST a serviço de escolas, unidades de saúde e conectividade rural", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Universalizar energia", original: "Levar energia confiável e conectividade significativa a comunidades, escolas, unidades de saúde e atividades produtivas", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Internet qualidade", original: "Garantir internet de qualidade, dispositivos compartilhados, plataformas interoperáveis e proteção de dados", subs: ["Infraestrutura e conectividade", "Dispositivos"] },
+                    { curto: "Infra digital", original: "Acelerar a expansão das redes pelo compartilhamento da infraestrutura passiva, postes, dutos, torres e fibra", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Satélites", original: "Levar fibra e backhaul ao interior e à Amazônia, acelerar infovias, usar satélites de órbita baixa como complemento regulado", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Recondicionamento", original: "ampliar recondicionamento e doação de equipamentos", subs: ["Dispositivos"] },
+                    { curto: "Reduzir imposto", original: "reduzir a carga tributária do smartphone de entrada, como uma forma de subsídio e inclusão digital da população de baixa renda", subs: ["Acessibilidade econômica", "Dispositivos"] }
                 ]}, 
                 { nome: "Fomento a CT&I", valor: 10, max: 15, propostas: [
-                    { curto: "FNDCT", original: "Assegurar execução plurianual do FNDCT, proteção contra contingenciamentos, governança transparente" },
-                    { curto: "Talentos IA", original: "Fortalecer ciência, matemática, computação e inteligência artificial desde a educação básica; valorizar bolsas e carreiras; repatriar brasileiros e atrair pesquisadores" },
-                    { curto: "Computação", original: "ampliar conteúdos e modelos em português; e garantir capacidade computacional de alto desempenho para universidades, saúde, pesquisa, empresas e serviços públicos" },
-                    { curto: "Semicondutores", original: "Construir capacidade nacional de forma gradual, priorizando etapas em que o Brasil possa competir, apoiar nichos estratégicos com Finep e BNDES" },
-                    { curto: "Satélites", original: "Estimular satélites de observação, comunicações e defesa, inclusive órbita baixa para áreas remotas; consolidar Alcântara como espaçoporto" },
-                    { curto: "Bioeconomia e agro", original: "Concentrar missões em bioeconomia, agricultura digital, saúde, transição energética, cibersegurança, semicondutores, economia espacial e serviços digitais" },
-                    { curto: "Currículos", original: "Atualizar os currículos para inteligência artificial, automação, análise de dados industriais" },
-                    { curto: "IA no agro", original: "criar centros de excelência em inteligência artificial aplicada ao agro" },
-                    { curto: "Rede Amazônica", original: "Criar uma Rede Amazônica de Biotecnologia, Nanotecnologia, Propriedade Intelectual e Repartição de Beneficios" }
+                    { curto: "FNDCT", original: "Assegurar execução plurianual do FNDCT, proteção contra contingenciamentos, governança transparente", subs: ["Financiamento à pesquisa"] },
+                    { curto: "Talentos IA", original: "Fortalecer ciência, matemática, computação e inteligência artificial desde a educação básica; valorizar bolsas e carreiras; repatriar brasileiros e atrair pesquisadores", subs: ["Formação de talentos"] },
+                    { curto: "Computação", original: "ampliar conteúdos e modelos em português; e garantir capacidade computacional de alto desempenho para universidades, saúde, pesquisa, empresas e serviços públicos", subs: ["Infraestrutura de pesquisa", "Áreas estratégicas"] },
+                    { curto: "Semicondutores", original: "Construir capacidade nacional de forma gradual, priorizando etapas em que o Brasil possa competir, apoiar nichos estratégicos com Finep e BNDES", subs: ["Áreas estratégicas"] },
+                    { curto: "Satélites de observação", original: "Estimular satélites de observação, comunicações e defesa, inclusive órbita baixa para áreas remotas; consolidar Alcântara como espaçoporto", subs: ["Áreas estratégicas"] },
+                    { curto: "Bioeconomia e agro", original: "Concentrar missões em bioeconomia, agricultura digital, saúde, transição energética, cibersegurança, semicondutores, economia espacial e serviços digitais", subs: ["Áreas estratégicas"] },
+                    { curto: "Currículos", original: "Atualizar os currículos para inteligência artificial, automação, análise de dados industriais", subs: ["Formação de talentos"] },
+                    { curto: "IA no agro", original: "criar centros de excelência em inteligência artificial aplicada ao agro", subs: ["Infraestrutura de pesquisa", "Áreas estratégicas"] },
+                    { curto: "Rede Amazônica", original: "Criar uma Rede Amazônica de Biotecnologia, Nanotecnologia, Propriedade Intelectual e Repartição de Beneficios", subs: ["Relação universidade-empresa", "Áreas estratégicas"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 9, max: 15, propostas: [
-                    { curto: "Lei do Bem", original: "Modernizar e simplificar a Lei do Bem, ampliar seu alcance a pequenas e médias empresas, dar segurança juridica aos incentivos" },
-                    { curto: "Crédito subvenção", original: "expandir crédito, subvenção, capital de risco e encomendas tecnológicas" },
-                    { curto: "Tributação data center", original: "Criar regime tributário estável para bens de capital e serviços de data center" },
-                    { curto: "Automação", original: "estimular a indústria nacional de automação e aeronaves remotamente pilotadas; e usar compras públicas competitivas como primeira demanda para soluções brasileiras" },
-                    { curto: "Indústria 4.0", original: "Estimular o investimento privado em automação, digitalização e Indústria 4.0, incluindo o retrofit digital de máquinas e linhas já existentes" },
-                    { curto: "Programa Nac.", original: "Criar um Programa Nacional de Indústria 4.0 e de IA, com prioridade para as pequenas e médias empresas e metas de adoção por porte e por setor" },
-                    { curto: "Apoio PMEs", original: "apoiar diretamente as pequenas e médias indústrias por meio de vouchers de digitalização" },
-                    { curto: "Startups IA", original: "Estimular startups e empresas nacionais desenvolvedoras de soluções de IA para a indústria" }
+                    { curto: "Lei do Bem", original: "Modernizar e simplificar a Lei do Bem, ampliar seu alcance a pequenas e médias empresas, dar segurança juridica aos incentivos", subs: ["Tributação da inovação"] },
+                    { curto: "Crédito subvenção", original: "expandir crédito, subvenção, capital de risco e encomendas tecnológicas", subs: ["Capital e financiamento", "Compras públicas de inovação"] },
+                    { curto: "Tributação data center", original: "Criar regime tributário estável para bens de capital e serviços de data center", subs: ["Ecossistema e habitats", "Tributação da inovação"] },
+                    { curto: "Automação", original: "estimular a indústria nacional de automação e aeronaves remotamente pilotadas; e usar compras públicas competitivas como primeira demanda para soluções brasileiras", subs: ["Compras públicas de inovação", "Áreas estratégicas"] },
+                    { curto: "Indústria 4.0", original: "Estimular o investimento privado em automação, digitalização e Indústria 4.0, incluindo o retrofit digital de máquinas e linhas já existentes", subs: ["Capital e financiamento"] },
+                    { curto: "Programa Nac. de IA", original: "Criar um Programa Nacional de Indústria 4.0 e de IA, com prioridade para as pequenas e médias empresas e metas de adoção por porte e por setor", subs: ["Capital e financiamento"] },
+                    { curto: "Apoio PMEs", original: "apoiar diretamente as pequenas e médias indústrias por meio de vouchers de digitalização", subs: ["Capital e financiamento"] },
+                    { curto: "Startups IA", original: "Estimular startups e empresas nacionais desenvolvedoras de soluções de IA para a indústria", subs: ["Ecossistema e habitats"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 13, max: 15, propostas: [
-                    { curto: "Bases públicas", original: "Organizar bases públicas de qualidade, interoperáveis e documentadas" },
-                    { curto: "Centro gov digital", original: "Criar centro de governo digital com autoridade para coordenar reguladores e ministérios, delimitar competências" },
-                    { curto: "gov.br comum", original: "Usar identidade digital e interoperabilidade do gov.br como plataforma comum, cofinanciar capacidades de estados e municípios e fortalecer o CGI.br" },
-                    { curto: "PIX", original: "Transformar PIX, gov.br, open finance e outras soluções brasileiras em instrumentos de cooperação e exportação" },
-                    { curto: "Canal único", original: "O cidadão terá identidade digital, canal único de atendimento e direito de não apresentar ao governo informação que já esteja em base pública" },
-                    { curto: "Identidade clínica", original: "Construir identidade clínica digital e interoperabilidade entre APS, especialista, laboratório, hospital, UTI, farmácia, reabilitação e vigilância" },
-                    { curto: "IA nas UBS", original: "Modernizar UBS com conectividade, prontuário interoperável, prescrição eletrônica, telemedicina" },
-                    { curto: "Análise de gastos", original: "Implantar plataforma nacional de análise de riscos em gastos públicos, com inteligência artificial, para identificar fraudes" },
-                    { curto: "Digitalizar licenças", original: "Digitalizar licenças, outorgas, autos e desembargos, com linguagem clara e rastreabilidade" },
-                    { curto: "Processos digitais", original: "Implantar processos digitais, prazos, gestão por risco, transparência de títulos e beneficiários finais" },
-                    { curto: "Dados pesquisa", original: "Ampliar levantamentos geofísicos, geoquímicos e hidrogeológicos, digitalizar acervos e disponibilizar dados de qualidade para pesquisa e investimento" },
-                    { curto: "Vacinas e fila", original: "Reunir vacinas, consultas, exames, receitas, resultados, posição na fila, alertas e remarcação em um canal nacional autenticado" },
-                    { curto: "Validação de IA", original: "Adotar IA somente com validação, transparência, supervisão profissional, avaliação de impacto e auditoria" }
+                    { curto: "Bases públicas", original: "Organizar bases públicas de qualidade, interoperáveis e documentadas", subs: ["Infraestrutura e dados do Estado"] },
+                    { curto: "Centro gov digital", original: "Criar centro de governo digital com autoridade para coordenar reguladores e ministérios, delimitar competências", subs: ["Compras e gestão", "Coordenação federativa"] },
+                    { curto: "gov.br comum", original: "Usar identidade digital e interoperabilidade do gov.br como plataforma comum, cofinanciar capacidades de estados e municípios e fortalecer o CGI.br", subs: ["Identidade digital", "Coordenação federativa"] },
+                    { curto: "PIX e Exportação", original: "Transformar PIX, gov.br, open finance e outras soluções brasileiras em instrumentos de cooperação e exportação", subs: ["Infraestrutura e dados do Estado", "Internacionalização"] },
+                    { curto: "Canal único", original: "O cidadão terá identidade digital, canal único de atendimento e direito de não apresentar ao governo informação que já esteja em base pública", subs: ["Identidade digital", "Serviços digitais ao cidadão"] },
+                    { curto: "Identidade clínica", original: "Construir identidade clínica digital e interoperabilidade entre APS, especialista, laboratório, hospital, UTI, farmácia, reabilitação e vigilância", subs: ["Serviços digitais ao cidadão", "Infraestrutura e dados do Estado"] },
+                    { curto: "IA nas UBS", original: "Modernizar UBS com conectividade, prontuário interoperável, prescrição eletrônica, telemedicina", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Análise de gastos", original: "Implantar plataforma nacional de análise de riscos em gastos públicos, com inteligência artificial, para identificar fraudes", subs: ["IA no setor público"] },
+                    { curto: "Digitalizar licenças", original: "Digitalizar licenças, outorgas, autos e desembargos, com linguagem clara e rastreabilidade", subs: ["Compras e gestão"] },
+                    { curto: "Processos digitais", original: "Implantar processos digitais, prazos, gestão por risco, transparência de títulos e beneficiários finais", subs: ["Compras e gestão"] },
+                    { curto: "Dados pesquisa", original: "Ampliar levantamentos geofísicos, geoquímicos e hidrogeológicos, digitalizar acervos e disponibilizar dados de qualidade para pesquisa e investimento", subs: ["Transparência e dados abertos"] },
+                    { curto: "Vacinas e fila", original: "Reunir vacinas, consultas, exames, receitas, resultados, posição na fila, alertas e remarcação em um canal nacional autenticado", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Validação de IA", original: "Adotar IA somente com validação, transparência, supervisão profissional, avaliação de impacto e auditoria", subs: ["IA no setor público"] }
                 ]}, 
                 { nome: "Regulação", valor: 8, max: 15, propostas: [
-                    { curto: "Marco legal de dano", original: "Adotar marco legal centrado no uso, no dano e no risco concreto, com transparência, responsabilização e não discriminação" },
-                    { curto: "Proteção crianças", original: "Consolidar em lei regras de responsabilidade, devido processo, transparência e recurso, implementar plenamente a proteção de crianças e adolescentes e preservar os princípios do Marco Civil" },
-                    { curto: "Mercados competitivos", original: "Fortalecer a concorrência com interoperabilidade, portabilidade de dados, regras para agentes com poder estrutural e capacidade técnica do CADE para a economia digital" },
-                    { curto: "Diplomacia IA", original: "Colocar a diplomacia a serviço do acesso do Brasil à inteligência artificial, à computação avançada, à infraestrutura digital, à biotecnologia e aos novos materiais" },
-                    { curto: "Cibersegurança", original: "Criar autoridade nacional com independência técnica, mandato e orçamento; estabelecer padrões auditáveis e notificação de incidentes para infraestruturas críticas" },
-                    { curto: "LGPD", original: "aplicação efetiva da LGPD na guarda e no uso das informações de empresas e cidadãos" },
-                    { curto: "Enfrentamento crimes", original: "Criar um sistema nacional de enfrentamento aos crimes digitais, com laboratórios regionais dotados de inteligência artificial" },
-                    { curto: "Obras em IA", original: "Estabelecer obrigações proporcionais para plataformas, promoção de conteúdo brasileiro e regras para uso de obras em sistemas de IA" }
+                    { curto: "Marco legal de dano", original: "Adotar marco legal centrado no uso, no dano e no risco concreto, com transparência, responsabilização e não discriminação", subs: ["Inteligência artificial"] },
+                    { curto: "Proteção crianças", original: "Consolidar em lei regras de responsabilidade, devido processo, transparência e recurso, implementar plenamente a proteção de crianças e adolescentes e preservar os princípios do Marco Civil", subs: ["Plataformas e conteúdo", "Infância e adolescência"] },
+                    { curto: "Mercados competitivos", original: "Fortalecer a concorrência com interoperabilidade, portabilidade de dados, regras para agentes com poder estrutural e capacidade técnica do CADE para a economia digital", subs: ["Concorrência digital"] },
+                    { curto: "Diplomacia IA", original: "Colocar a diplomacia a serviço do acesso do Brasil à inteligência artificial, à computação avançada, à infraestrutura digital, à biotecnologia e aos novos materiais", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Cibersegurança", original: "Criar autoridade nacional com independência técnica, mandato e orçamento; estabelecer padrões auditáveis e notificação de incidentes para infraestruturas críticas", subs: ["Cibersegurança e soberania"] },
+                    { curto: "LGPD", original: "aplicação efetiva da LGPD na guarda e no uso das informações de empresas e cidadãos", subs: ["Dados pessoais e privacidade"] },
+                    { curto: "Enfrentamento crimes", original: "Criar um sistema nacional de enfrentamento aos crimes digitais, com laboratórios regionais dotados de inteligência artificial", subs: ["Cibersegurança e soberania"] },
+                    { curto: "Obras em IA", original: "Estabelecer obrigações proporcionais para plataformas, promoção de conteúdo brasileiro e regras para uso de obras em sistemas de IA", subs: ["Plataformas e conteúdo", "Inteligência artificial"] }
                 ]} 
             ] 
         },
@@ -360,53 +372,44 @@
             id: "cury", nome: "Augusto Cury", foto: "FBR280002551547_div.jpg", total: 27, 
             eixos: [ 
                 { nome: "Inclusão Digital", valor: 3, max: 15, propostas: [
-                    { curto: "Universalização da Conectividade em Locais Essenciais", original: "Levaremos internet de alta velocidade às escolas, hospitais, comunidades rurais e regiões remotas, reduzindo a exclusão digital e ampliando o acesso ao conhecimento, aos serviços públicos, ao empreendedorismo e à economia digital." },
-                    { curto: "Programa Comunidade 4.0", original: "Não basta entregar escritura onde falta esgoto [...] ou ensinar inteligência artificial se a comunidade não possui conectividade adequada." },
-                    { curto: "Inclusão Tecnológica Nacional", original: "Programas de inclusão digital, capacitação tecnológica e acesso universal a ferramentas digitais serão ampliados em todo o território nacional." }
+                    { curto: "Universalização da Conectividade em Locais Essenciais", original: "Levaremos internet de alta velocidade às escolas, hospitais, comunidades rurais e regiões remotas, reduzindo a exclusão digital e ampliando o acesso ao conhecimento, aos serviços públicos, ao empreendedorismo e à economia digital.", subs: ["Infraestrutura e conectividade"] },
+                    { curto: "Programa Comunidade 4.0", original: "Não basta entregar escritura onde falta esgoto [...] ou ensinar inteligência artificial se a comunidade não possui conectividade adequada.", subs: ["Infraestrutura e conectividade", "Inclusão de grupos específicos"] },
+                    { curto: "Inclusão Tecnológica Nacional", original: "Programas de inclusão digital, capacitação tecnológica e acesso universal a ferramentas digitais serão ampliados em todo o território nacional.", subs: ["Letramento digital", "Inclusão de grupos específicos"] }
                 ]}, 
                 { nome: "Fomento a CT&I", valor: 6, max: 15, propostas: [
-                    { curto: "Política Nacional de Semicondutores", original: "Defenderemos uma política nacional para atrair investimentos na produção de chips, componentes eletrônicos e sistemas embarcados, reduzindo a dependência externa e fortalecendo nossa soberania tecnológica." },
-                    { curto: "Indústria 4.0 e Automação", original: "Estimularemos investimentos em robótica, inteligência artificial, internet das coisas, automação industrial, computação em nuvem e manufatura avançada." },
-                    { curto: "Formação Avançada em IA", original: "Estimularemos milhares de profissionais a fazerem mestrado e doutorado em inteligência artificial aplicada a produtos inovadores em todas as áreas do ecossistema econômico." },
-                    { curto: "Universidade Empreendedora e Patentes", original: "Os campi universitários devem tornar-se ambientes de inovação, com incubadoras, laboratórios tecnológicos, centros de pesquisa aplicada e programas de incentivo à criação de startups [...] estimular o registro de patentes, fortalecer a cultura da propriedade intelectual e ampliar a transferência de tecnologia para o setor produtivo." },
-                    { curto: "Polo de IA e Indústria 4.0 na Zona Franca de SP", original: "Zona Franca de São Paulo: Transformada no principal polo brasileiro de Indústria 4.0, inteligência artificial, semicondutores, robótica, automação, drones, softwares exportáveis e tecnologias avançadas." },
-                    { curto: "Investimento em CT&I Estratégica", original: "A utilização de satélites, drones, sensores, inteligência artificial e análise de dados permitirá maior produtividade com menor impacto ambiental." }
+                    { curto: "Política Nacional de Semicondutores", original: "Defenderemos uma política nacional para atrair investimentos na produção de chips, componentes eletrônicos e sistemas embarcados, reduzindo a dependência externa e fortalecendo nossa soberania tecnológica.", subs: ["Áreas estratégicas"] },
+                    { curto: "Indústria 4.0 e Automação", original: "Estimularemos investimentos em robótica, inteligência artificial, internet das coisas, automação industrial, computação em nuvem e manufatura avançada.", subs: ["Áreas estratégicas", "Ecossistema e habitats"] },
+                    { curto: "Formação Avançada em IA", original: "Estimularemos milhares de profissionais a fazerem mestrado e doutorado em inteligência artificial aplicada a produtos inovadores em todas as áreas do ecossistema econômico.", subs: ["Formação de talentos"] },
+                    { curto: "Universidade Empreendedora e Patentes", original: "Os campi universitários devem tornar-se ambientes de inovação, com incubadoras, laboratórios tecnológicos, centros de pesquisa aplicada e programas de incentivo à criação de startups [...] estimular o registro de patentes, fortalecer a cultura da propriedade intelectual e ampliar a transferência de tecnologia para o setor produtivo.", subs: ["Relação universidade-empresa", "Ecossistema e habitats"] },
+                    { curto: "Polo de IA e Indústria 4.0 na Zona Franca de SP", original: "Zona Franca de São Paulo: Transformada no principal polo brasileiro de Indústria 4.0, inteligência artificial, semicondutores, robótica, automação, drones, softwares exportáveis e tecnologias avançadas.", subs: ["Ecossistema e habitats", "Áreas estratégicas"] },
+                    { curto: "Investimento em CT&I Estratégica", original: "A utilização de satélites, drones, sensores, inteligência artificial e análise de dados permitirá maior produtividade com menor impacto ambiental.", subs: ["IA no setor público", "Áreas estratégicas"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: [
-                    { curto: "Democratização da IA para PMEs", original: "Precisamos transformar cada micro e pequena empresa em uma unidade produtiva altamente eficiente. Um pequeno empreendedor, com acesso à inteligência artificial, pode: automatizar processos, reduzir custos, aumentar produtividade." },
-                    { curto: "Banco do Empreendedor", original: "Criaremos um banco especializado em financiar pequenos empreendedores, microempresas e startups, oferecendo crédito acessível, orientação técnica e educação financeira." },
-                    { curto: "Habitats de Inovação para Jovens", original: "Ampliaremos o acesso a crédito, incubadoras de startups, parques tecnológicos e programas de capacitação em inovação digital, inteligência artificial, economia criativa e negócios sustentáveis." },
-                    { curto: "Zonas de Exportação de Tecnologia (ZONE)", original: "Regulamentação simplificada e digitalizada; Incentivos específicos para empresas de tecnologia, inteligência artificial, robótica e inovação [para exportação]." },
-                    { curto: "Estímulo a Cooperativas de Tecnologia", original: "Será criada uma plataforma digital nacional para integrar cooperativas, cooperados, fornecedores, consumidores, instituições financeiras e mercados internacionais." }
+                    { curto: "Democratização da IA para PMEs", original: "Precisamos transformar cada micro e pequena empresa em uma unidade produtiva altamente eficiente. Um pequeno empreendedor, com acesso à inteligência artificial, pode: automatizar processos, reduzir custos, aumentar produtividade.", subs: ["Ecossistema e habitats"] },
+                    { curto: "Banco do Empreendedor", original: "Criaremos um banco especializado em financiar pequenos empreendedores, microempresas e startups, oferecendo crédito acessível, orientação técnica e educação financeira.", subs: ["Capital e financiamento"] },
+                    { curto: "Habitats de Inovação para Jovens", original: "Ampliaremos o acesso a crédito, incubadoras de startups, parques tecnológicos e programas de capacitação em inovação digital, inteligência artificial, economia criativa e negócios sustentáveis.", subs: ["Ecossistema e habitats", "Letramento digital"] },
+                    { curto: "Zonas de Exportação de Tecnologia (ZONE)", original: "Regulamentação simplificada e digitalizada; Incentivos específicos para empresas de tecnologia, inteligência artificial, robótica e inovação [para exportação].", subs: ["Tributação da inovação", "Internacionalização"] },
+                    { curto: "Estímulo a Cooperativas de Tecnologia", original: "Será criada uma plataforma digital nacional para integrar cooperativas, cooperados, fornecedores, consumidores, instituições financeiras e mercados internacionais.", subs: ["Serviços digitais ao cidadão", "Ecossistema e habitats"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 10, max: 15, propostas: [
-                    { curto: "Governo Totalmente Digital", original: "Serviços públicos deverão estar disponíveis em plataformas integradas, reduzindo filas, papelada, deslocamentos e tempo perdido pelo cidadão. O Estado deverá funcionar na velocidade da sociedade digital." },
-                    { curto: "IA no Controle de Gastos Públicos", original: "Maior aprimoramento da Inteligência Artificial para identificar fraudes, desperdícios, sobrepreços, pagamentos irregulares e ineficiências administrativas." },
-                    { curto: "Projeto FATO / Segurança 4.0", original: "A segurança pública será fortalecida pelo uso de câmeras inteligentes, reconhecimento de padrões, análise preditiva, drones, monitoramento integrado e inteligência artificial." },
-                    { curto: "Tele Saúde Brasil", original: "Criaremos transformar o Brasil em um maior centro de telemedicina do mundo [...] Ampliaremos as consultas remotas, os laudos digitais e a integração entre hospitais, clínicas e unidades básicas [...] estabelecimento de meta nacional de atendimento digital em até trinta minutos." },
-                    { curto: "Prontuário Eletrônico Único e SUS Digital", original: "Nossa prioridade será fortalecer sua gestão por meio da digitalização dos prontuários, integração dos sistemas, redução das filas, melhoria da eficiência administrativa." },
-                    { curto: "Programa SEO (Sociedade Está de Olho)", original: "Ampliaremos mecanismos de participação direta da população nas decisões públicas por meio de ferramentas digitais seguras, consultas públicas ampliadas e plataformas de transparência ativa." },
-                    { curto: "Regularização Fundiária Digital", original: "Tecnologias como drones, imagens de satélite, georreferenciamento, inteligência artificial e bases cadastrais integradas poderão reduzir enormemente o tempo necessário para levantamento e documentação." },
-                    { curto: "Integração e Automação de Órgãos Públicos", original: "A automação e integração entre órgãos públicos reduzirão custos, aumentarão a produtividade e melhorarão o atendimento ao cidadão. A tecnologia será uma aliada permanente da eficiência do Estado." },
-                    { curto: "Proteção à Mulher com Tecnologia", original: "Ampliaremos o uso de botões de alerta com geolocalização, aplicativos de emergência, monitoramento eletrônico de agressores [...] centrais integradas e protocolos de resposta prioritária para mulheres ameaçadas." },
-                    { curto: "Acesso Digital Assistido", original: "O programa criará uma ampla rede de pontos públicos de acesso digital assistido. Esses espaços poderão funcionar em: unidades básicas de saúde, escolas, centros comunitários, municípios de pequeno porte, comunidades rurais." }
+                    { curto: "Governo Totalmente Digital", original: "Serviços públicos deverão estar disponíveis em plataformas integradas, reduzindo filas, papelada, deslocamentos e tempo perdido pelo cidadão. O Estado deverá funcionar na velocidade da sociedade digital.", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "IA no Controle de Gastos Públicos", original: "Maior aprimoramento da Inteligência Artificial para identificar fraudes, desperdícios, sobrepreços, pagamentos irregulares e ineficiências administrativas.", subs: ["IA no setor público", "Transparência e dados abertos"] },
+                    { curto: "Projeto FATO / Segurança 4.0", original: "A segurança pública será fortalecida pelo uso de câmeras inteligentes, reconhecimento de padrões, análise preditiva, drones, monitoramento integrado e inteligência artificial.", subs: ["IA no setor público"] },
+                    { curto: "Tele Saúde Brasil", original: "Criaremos transformar o Brasil em um maior centro de telemedicina do mundo [...] Ampliaremos as consultas remotas, os laudos digitais e a integração entre hospitais, clínicas e unidades básicas [...] estabelecimento de meta nacional de atendimento digital em até trinta minutos.", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Prontuário Eletrônico Único e SUS Digital", original: "Nossa prioridade será fortalecer sua gestão por meio da digitalização dos prontuários, integração dos sistemas, redução das filas, melhoria da eficiência administrativa.", subs: ["Serviços digitais ao cidadão", "Infraestrutura e dados do Estado"] },
+                    { curto: "Programa SEO (Sociedade Está de Olho)", original: "Ampliaremos mecanismos de participação direta da população nas decisões públicas por meio de ferramentas digitais seguras, consultas públicas ampliadas e plataformas de transparência ativa.", subs: ["Transparência e dados abertos", "Serviços digitais ao cidadão"] },
+                    { curto: "Regularização Fundiária Digital", original: "Tecnologias como drones, imagens de satélite, georreferenciamento, inteligência artificial e bases cadastrais integradas poderão reduzir enormemente o tempo necessário para levantamento e documentação.", subs: ["Infraestrutura e dados do Estado", "IA no setor público"] },
+                    { curto: "Integração e Automação de Órgãos Públicos", original: "A automação e integração entre órgãos públicos reduzirão custos, aumentarão a produtividade e melhorarão o atendimento ao cidadão. A tecnologia será uma aliada permanente da eficiência do Estado.", subs: ["Compras e gestão", "Infraestrutura e dados do Estado"] },
+                    { curto: "Proteção à Mulher com Tecnologia", original: "Ampliaremos o uso de botões de alerta com geolocalização, aplicativos de emergência, monitoramento eletrônico de agressores [...] centrais integradas e protocolos de resposta prioritária para mulheres ameaçadas.", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Acesso Digital Assistido", original: "O programa criará uma ampla rede de pontos públicos de acesso digital assistido. Esses espaços poderão funcionar em: unidades básicas de saúde, escolas, centros comunitários, municípios de pequeno porte, comunidades rurais.", subs: ["Infraestrutura e conectividade", "Serviços digitais ao cidadão"] }
                 ]}, 
                 { nome: "Regulação", valor: 3, max: 15, propostas: [
-                    { curto: "Marco Legal Seguro da IA", original: "Criaremos uma política nacional para desenvolvimento, regulação e aplicação da IA em serviços públicos, educação, saúde, segurança e gestão governamental [...] estabeleceremos um Marco Legal seguro para a IA, que garanta inovação com ética e segurança jurídica." },
-                    { curto: "Soberania Digital e Cibersegurança", original: "Fortaleceremos a soberania digital, a segurança cibernética e a proteção de dados pessoais, reduzindo dependências externas em áreas críticas." },
-                    { curto: "Cidadania e Proteção Digital de Crianças", original: "Projeto de Lei Augusto Cury, voltado à prevenção de predadores sexuais e à proteção das crianças [...] Algoritmos podem repetir incessantemente conteúdos associados à aparência [...] Desenvolveremos políticas de educação emocional e cidadania digital." }
+                    { curto: "Marco Legal Seguro da IA", original: "Criaremos uma política nacional para desenvolvimento, regulação e aplicação da IA em serviços públicos, educação, saúde, segurança e gestão governamental [...] estabeleceremos um Marco Legal seguro para a IA, que garanta inovação com ética e segurança jurídica.", subs: ["Inteligência artificial"] },
+                    { curto: "Soberania Digital e Cibersegurança", original: "Fortaleceremos a soberania digital, a segurança cibernética e a proteção de dados pessoais, reduzindo dependências externas em áreas críticas.", subs: ["Cibersegurança e soberania", "Dados pessoais e privacidade"] },
+                    { curto: "Cidadania e Proteção Digital de Crianças", original: "Projeto de Lei Augusto Cury, voltado à prevenção de predadores sexuais e à proteção das crianças [...] Algoritmos podem repetir incessantemente conteúdos associados à aparência [...] Desenvolveremos políticas de educação emocional e cidadania digital.", subs: ["Infância e adolescência", "Plataformas e conteúdo"] }
                 ]} 
             ] 
         }
-    ];
-
-    const convergenciasData = [
-        { tema: "Atração de Data Centers e Infraestrutura de Dados", prop: [ { c: "Lula", t: "Expansão de data centers vinculada a salvaguardas socioambientais e regulação." }, { c: "Ronaldo Caiado", t: "Regime tributário próprio para incentivo a bens de capital e serviços de data center." }, { c: "Romeu Zema", t: "Atração de investimento internacional em data centers atrelada ao uso de energia limpa." }, { c: "Flávio Bolsonaro", t: "Criação do 'Polo Global de Data Centers'." }, { c: "Renan Santos", t: "Incentivo à instalação de data centers em Zonas Econômicas de Alta Inteligência (ZEAIs)." }, { c: "Augusto Cury", t: "Atração e infraestrutura de data centers para suporte à gestão e soberania." } ] },
-        { tema: "IA Aplicada à Saúde e Prontuário Eletrônico Unificado", prop: [ { c: "Lula", t: "Telemedicina no SUS e criação do Supercentro Brasil de Telediagnóstico." }, { c: "Ronaldo Caiado", t: "Identidade clínica digital e modernização de Unidades Básicas de Saúde (UBS)." }, { c: "Romeu Zema", t: "Prontuário eletrônico e integração dos sistemas de saúde público e privado." }, { c: "Flávio Bolsonaro", t: "Prontuário eletrônico único e digitalização dos processos do SUS." }, { c: "Renan Santos", t: "Plataforma PRONTO (prontuário eletrônico nacional interoperável) e vigilância epidemiológica preditiva." }, { c: "Augusto Cury", t: "Tele Saúde Brasil (triagem por IA em 30 min) e Prontuário Eletrônico Único do SUS." } ] },
-        { tema: "IA no Setor Público e Combate à Corrupção / Gestão", prop: [ { c: "Lula", t: "Transformação do Portal da Transparência em plataforma inteligente com IA." }, { c: "Ronaldo Caiado", t: "Plataforma de análise de riscos em gastos públicos com IA e dados abertos." }, { c: "Romeu Zema", t: "Adoção de tecnologias do mercado para direcionamento inteligente de processos e filas." }, { c: "Flávio Bolsonaro", t: "Assistentes automatizados no governo e IA para segurança/prevenção." }, { c: "Renan Santos", t: "Uso de IA e dados integrados para diagnóstico público e laboratórios." }, { c: "Augusto Cury", t: "IA no controle de gastos e combate a fraudes (Programa SEO) e na Segurança Pública 4.0 (Projeto FATO)." } ] },
-        { tema: "Parcerias Universidade-Empresa e Formação de Talentos", prop: [ { c: "Lula", t: "Programa Conhecimento Brasil e formação de pesquisadores em áreas estratégicas." }, { c: "Ronaldo Caiado", t: "Centros de excelência em IA e formação/retenção de talentos." }, { c: "Romeu Zema", t: "Integração universidade-empresa (4 propostas) e atração de investimento privado em P&D." }, { c: "Flávio Bolsonaro", t: "Política Nacional de Formação de Talentos e expansão de parques tecnológicos/incubadoras." }, { c: "Renan Santos", t: "Projeto Abaporu (laboratório nacional) e formação/repatriamento de talentos em IA." }, { c: "Augusto Cury", t: "Concessão de bolsas de mestrado/doutorado em IA aplicada e incentivo a startups universitárias." } ] },
-        { tema: "Proteção de Crianças e Adolescentes no Ambiente Digital", prop: [ { c: "Lula", t: "Aprimoramento do ECA Digital, regulação de telas por faixa etária e regulação de jogos digitais." }, { c: "Ronaldo Caiado", t: "Regras de responsabilidade para plataformas e implementação da proteção a crianças/jovens." }, { c: "Augusto Cury", t: "Projeto de Lei Augusto Cury contra predadores sexuais e regulação de conteúdos nocivos/algoritmos para jovens." } ] },
-        { tema: "Capacidade Nacional e Política de Semicondutores", prop: [ { c: "Ronaldo Caiado", t: "Construção de capacidade nacional em semicondutores e computação quântica." }, { c: "Augusto Cury", t: "Política Nacional de Semicondutores/microeletrônica e transformação da Zona Franca de SP em polo de hardware e IA." } ] }
     ];
 
     let candidatoAtual = null;
@@ -425,38 +428,108 @@
             lista.innerHTML += '<div class="candidate-card" onclick="abrirDetalhe(\'' + cand.id + '\')"><div class="candidate-profile"><img src="' + cand.foto + '" class="candidate-photo"> <span class="candidate-name">' + formatName(cand.nome) + '</span></div><span class="candidate-total">' + cand.total + ' propostas</span></div>';
             select.innerHTML += '<option value="' + cand.id + '">' + cand.nome + (cand.id === 'cury' ? '*' : '') + '</option>';
         });
-        renderizarListaConvergencias();
     }
 
-    function renderizarListaConvergencias() {
-        const container = document.getElementById('grafico-convergencias');
-        container.innerHTML = '';
-        convergenciasData.forEach((conv, i) => {
-            let html = '<div class="bar-container" onclick="toggleEixo(\'conv-' + i + '\')">';
-            html += '<div class="bar-label">' + conv.tema + '</div>';
-            html += '<div class="bar-track"><div class="bar-fill" style="width:100%; background:#B0BEC5; color:#37474F; padding-left:16px;">' + conv.prop.length + ' candidatos concordam</div></div></div>';
-            
-            let propsHtml = '<div class="propostas-lista" id="conv-' + i + '" style="border-left: 6px solid #90A4AE;"><ul style="padding-left:10px;">';
-            conv.prop.forEach(p => {
-                propsHtml += '<li style="margin-bottom:16px;"><strong>' + formatName(p.c) + ':</strong><br>' + p.t + '</li>';
+    function removerAcentos(str) {
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
+
+    function mostrarSugestoes() {
+        const val = removerAcentos(document.getElementById("input-busca").value.trim());
+        const box = document.getElementById("sugestoes-busca");
+        box.innerHTML = '';
+        
+        if (val.length < 2) { 
+            box.style.display = 'none'; 
+            return; 
+        }
+        
+        const matches = subcategoriasOficiais.filter(s => removerAcentos(s).includes(val));
+        
+        if (matches.length > 0) {
+            box.style.display = 'block';
+            matches.forEach(m => {
+                box.innerHTML += '<div onclick="executarBusca(\'' + m + '\')">' + m + '</div>';
             });
-            propsHtml += '</ul></div>';
-            
-            container.innerHTML += html + propsHtml;
-        });
+        } else {
+            box.style.display = 'none';
+        }
     }
 
-    function abrirConvergencia() {
-        document.getElementById('lista-candidatos').style.display = 'none';
-        document.getElementById('detalhe-convergencia').style.display = 'block';
+    function executarBusca(subtemaEscolhido) {
+        document.getElementById("input-busca").value = subtemaEscolhido;
+        document.getElementById("sugestoes-busca").style.display = 'none';
+        
+        const btnLimpar = document.getElementById('btn-limpar');
+        const conteudoInicial = document.getElementById('conteudo-inicial');
+        const resultadosBusca = document.getElementById('resultados-busca');
+
+        btnLimpar.style.display = 'block';
+        conteudoInicial.style.display = 'none';
+        resultadosBusca.style.display = 'block';
+        
+        let htmlResultados = '<div style="margin-bottom: 24px; font-size: 1.1rem; color: #666; border-bottom: 2px solid #EEE; padding-bottom: 12px;">Resultados encontrados para a categoria oficial: "<strong>' + subtemaEscolhido + '</strong>"</div>';
+        let encontrou = false;
+
+        candidatosData.forEach(cand => {
+            let propsCand = '';
+            cand.eixos.forEach(eixo => {
+                eixo.propostas.forEach(p => {
+                    if (p.subs && p.subs.includes(subtemaEscolhido)) {
+                        propsCand += '<li class="prop-item-container">';
+                        propsCand += '  <div style="font-size: 0.85rem; color: #666; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">Eixo: ' + eixo.nome + '</div>';
+                        
+                        if(p.original && p.original.trim() !== "") {
+                            propsCand += '  <div class="prop-resumo" onclick="toggleOriginal(this, event)">';
+                            propsCand += '    <span class="seta-expansao">►</span> ' + p.curto;
+                            propsCand += '  </div>';
+                            propsCand += '  <div class="texto-original">"' + p.original + '"</div>';
+                        } else {
+                            propsCand += '  <div class="prop-resumo" style="cursor:default; padding-left:20px;">' + p.curto + '</div>';
+                        }
+                        propsCand += '</li>';
+                    }
+                });
+            });
+
+            if (propsCand !== '') {
+                encontrou = true;
+                htmlResultados += '<div style="background: #FFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">';
+                htmlResultados += '  <div style="display:flex; align-items:center; gap:16px; margin-bottom: 16px; border-bottom: 1px solid #EEE; padding-bottom: 16px;">';
+                htmlResultados += '    <img src="' + cand.foto + '" class="candidate-photo">';
+                htmlResultados += '    <span class="candidate-name">' + formatName(cand.nome) + '</span>';
+                htmlResultados += '  </div>';
+                htmlResultados += '  <ul style="list-style:none; padding:0; margin:0;">' + propsCand + '</ul>';
+                htmlResultados += '</div>';
+            }
+        });
+
+        if (!encontrou) {
+            htmlResultados += '<div style="text-align:center; padding: 40px 20px; color:#666; background:#FFF; border-radius:8px; border:2px solid #EEE;">Nenhum candidato mapeou propostas para esta categoria específica. Tente outra sugestão.</div>';
+        }
+
+        resultadosBusca.innerHTML = htmlResultados;
+        
+        setTimeout(() => { pymChild.sendHeight(); }, 200);
+    }
+
+    function limparBusca() {
+        document.getElementById('input-busca').value = '';
+        document.getElementById("sugestoes-busca").style.display = 'none';
+        document.getElementById('btn-limpar').style.display = 'none';
+        document.getElementById('resultados-busca').style.display = 'none';
+        document.getElementById('conteudo-inicial').style.display = 'block';
     }
 
     function abrirDetalhe(id) {
         candidatoAtual = candidatosData.find(c => c.id === id);
-        document.getElementById('lista-candidatos').style.display = 'none';
+        document.getElementById('conteudo-inicial').style.display = 'none';
         document.getElementById('detalhe-candidato').style.display = 'block';
         document.getElementById('header-candidato-detalhe').innerHTML = '<img src="' + candidatoAtual.foto + '" class="candidate-photo"><span class="candidate-name">' + formatName(candidatoAtual.nome) + '</span>';
         document.getElementById('select-comparar').value = "";
+        
+        document.querySelector('.search-container').style.display = 'none';
+        
         renderizarGraficos();
     }
 
@@ -548,15 +621,21 @@
     }
 
     document.addEventListener('click', function(event) {
-        if (!event.target.closest('.prop-item-container')) {
+        if (!event.target.closest('.prop-item-container') && !event.target.closest('.search-container')) {
             fecharTodasAsPropostas();
+            document.getElementById("sugestoes-busca").style.display = 'none';
         }
     });
 
     function voltarParaLista() {
-        document.getElementById('detalhe-convergencia').style.display = 'none';
         document.getElementById('detalhe-candidato').style.display = 'none';
-        document.getElementById('lista-candidatos').style.display = 'block';
+        document.querySelector('.search-container').style.display = 'block';
+        
+        if (document.getElementById('input-busca').value.trim().length >= 2) {
+            document.getElementById('resultados-busca').style.display = 'block';
+        } else {
+            document.getElementById('conteudo-inicial').style.display = 'block';
+        }
     }
 
     function abrirModal(e) {
