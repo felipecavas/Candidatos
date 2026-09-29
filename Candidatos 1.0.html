@@ -6,7 +6,7 @@
     <title>Agenda Digital 2026 - Propostas</title>
     <style>
         :root { --bg-color: #F9F9F9; --text-color: #333333; }
-        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; overflow-y: hidden; }
         #app { max-width: 600px; margin: 0 auto; position: relative; }
         
         .candidate-card { background: #FFFFFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
@@ -27,7 +27,7 @@
         .detalhe-header-info { display: flex; align-items: center; gap: 16px; font-size: 1.5rem; font-weight: bold; }
         
         .compare-select-container { text-align: right; margin-bottom: 20px; }
-        .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; }
+        .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; width: 100%; max-width: 250px;}
         
         .bar-container { margin-bottom: 20px; cursor: pointer; }
         .bar-label { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; text-align: center;}
@@ -44,7 +44,6 @@
         .prop-item { margin-bottom: 16px; border-bottom: 1px solid #DDD; padding-bottom: 12px; }
         .prop-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
 
-        /* Estilos do Asterisco e Modal */
         .asterisk { color: #1976D2; cursor: pointer; padding: 0 4px; font-size: 1.2rem; display: inline-block; }
         .asterisk:hover { color: #0D47A1; }
         
@@ -87,7 +86,6 @@
     </div>
 </div>
 
-<!-- Modal -->
 <div id="modal-overlay" onclick="fecharModal(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
         <button class="btn-fechar-modal" onclick="fecharModal(event)">&times;</button>
@@ -95,7 +93,13 @@
     </div>
 </div>
 
+<!-- Biblioteca Pym.js para responsividade do Iframe -->
+<script src="https://pym.nprapps.org/pym.v1.min.js"></script>
+
 <script>
+    // Inicia o Pym.js e pede para ele verificar a altura a cada 500ms
+    var pymChild = new pym.Child({ polling: 500 });
+
     const candidatosData = [
         { id: "flavio", nome: "Flávio Bolsonaro", foto: "FBR280002551544_div.jpg", total: 34, eixos: [ { nome: "Inclusão Digital", valor: 8, max: 15, propostas: ["Bônus de Internet para as Mulheres", "Conectividade às localidades de baixa cobertura", "Escola Brasil por Elas: formação em IA e programação", "Pacote de Conexão para toda a população", "Robótica e Infraestrutura", "Economia Digital no currículo escolar", "Difundir IA para micro, pequenas e médias empresas"] }, { nome: "Fomento a CT&I", valor: 8, max: 15, propostas: ["Política Nacional de Formação de Talentos", "Transferir ensino superior para o Ministério de Ciência, Tecnologia e Inovação", "CAPES e CNPQ: priorizar impacto produtivo", "Aproximar empresas e universidades", "Impulsionar a Bioeconomia", "Incentivo a tecnologias disponíveis", "Elevar participação em patentes de IA", "Gestão das Universidades integrada à ciência"] }, { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: ["Estado como indutor", "Parques tecnológicos", "Expandir incubadoras", "Apoiar as startups de base tecnológica", "Polo Global de data centers"] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Digitalizar serviços do Governo Federal", "Identidade Digital Única", "Assistentes automatizados", "Prontuário eletrônico único", "Digitalização do SUS", "Investir em tecnologia e digitalizar os processos do INSS", "Aplicativo Central da Mulher", "Facilitar denúncias com IA", "Banco Nacional de Vagas"] }, { nome: "Regulação", valor: 4, max: 15, propostas: ["Legislação voltada à liberdade de criar e inovar", "Fortalecer a defesa cibernética do país", "Tesouraço da Censura", "Revogar todos os atos que o atual governo produziu para silenciar seus críticos"] } ] },
         { id: "lula", nome: "Lula", foto: "FBR280002542548_div.jpg", total: 45, eixos: [ { nome: "Inclusão Digital", valor: 7, max: 15, propostas: ["Oferta de conectividade: reduzir déficit de fibra óptica", "Ampliar 5G no campo", "Política Nacional de Letramento Digital", "Ampliar letramento digital", "Universalizar Novo PAC", "FUST", "Conectividade Rural"] }, { nome: "Fomento a CT&I", valor: 9, max: 15, propostas: ["Sequência ao Programa Conhecimento Brasil", "Uso estratégico do FNDCT", "Infraestrutura computacional soberana", "Desenvolver modelos de linguagens em Português", "Acelerar difusão de IA no setor produtivo", "Investir em P&D", "Formação de talentos", "Fortalecimento da Embrapa", "Fortalecimento da Base Industrial de Defesa"] }, { nome: "Empreend. e Startups", valor: 4, max: 15, propostas: ["Indústria 4.0", "Fomentar o desenvolvimento de tecnologia digital", "Investimento de apoio a pequenas e médias empresas", "Ampliação do Brasil Mais Produtivo"] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Facilitar a experiência de uso de plataformas públicas", "Personalização de serviços", "Aprimorar mecanismos do poder de compra do Estado", "Transformação do Portal da Transparência", "Expandir e melhorar o Programa Celular Seguro", "Integração dos sistemas interfederativos", "IA no SUS", "Modernização tecnológica e saúde", "Aprimorar a regulação da atenção especializada", "Supercentro Brasil de telediagnóstico"] }, { nome: "Regulação", valor: 15, max: 15, propostas: ["Conselho Nacional pela Soberania Digital", "Aprimoramento do ECA Digital", "Regulamentação do uso de telas por faixa etária", "Regulamentação das plataformas de jogos", "Crimes financeiros e cibernéticos", "Lei do direito autoral", "Regulação da IA", "Garantir a Soberania Digital", "Expansão de data centers e infraestrutura de IA", "Economia de dados: regras e infra", "Transparência algorítmica", "Regulação democrática das redes", "Regulação do trabalho mediado por plataforma", "Governança internacional para IA"] } ] },
