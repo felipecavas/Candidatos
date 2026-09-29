@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda Digital 2026 - Propostas</title>
+    <style>
+        :root { --bg-color: #F9F9F9; --text-color: #333333; }
+        body { font-family: Arial, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 16px; line-height: 1.6; }
+        #app { max-width: 600px; margin: 0 auto; position: relative; }
+        
+        .candidate-card { background: #FFFFFF; border: 2px solid #E0E0E0; border-radius: 8px; padding: 16px; margin-bottom: 16px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: 0.2s; }
+        .candidate-card:hover { border-color: #999999; }
+        .candidate-profile { display: flex; align-items: center; gap: 16px; }
+        .candidate-photo { width: 60px; height: 60px; border-radius: 12px; object-fit: cover; border: 2px solid #EEEEEE; }
+        .candidate-name { font-size: 1.3rem; font-weight: bold; display: flex; align-items: center; }
+        .candidate-total { font-size: 1.1rem; color: #666; background: #EEE; padding: 6px 12px; border-radius: 20px; white-space: nowrap; }
+        
+        .card-convergencia { background: #FFFFFF; border-color: #B0BEC5; padding: 20px 16px; justify-content: center; }
+        .card-convergencia .candidate-name { color: #455A64; font-size: 1.2rem; }
+        
+        .separator { border: none; border-top: 2px dashed #CCC; margin: 24px 0; }
+
+        #detalhe-candidato, #detalhe-convergencia { display: none; background: #FFFFFF; padding: 20px; border-radius: 8px; border: 2px solid #E0E0E0; }
+        .btn-voltar { background: none; border: none; color: #1976D2; font-size: 1.1rem; font-weight: bold; cursor: pointer; padding: 0 0 10px 0; display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+        .detalhe-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; border-bottom: 2px solid #EEE; padding-bottom: 16px; }
+        .detalhe-header-info { display: flex; align-items: center; gap: 16px; font-size: 1.5rem; font-weight: bold; }
+        
+        .compare-select-container { text-align: right; margin-bottom: 20px; }
+        .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; }
+        
+        .bar-container { margin-bottom: 20px; cursor: pointer; }
+        .bar-label { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; text-align: center;}
+        .compare-row { display: flex; gap: 10px; align-items: flex-end; }
+        .track-col { flex: 1; display: flex; flex-direction: column; }
+        .track-name { font-size: 0.9rem; margin-bottom: 4px; color: #555; font-weight: bold; display: flex; align-items: center;}
+        .bar-track { background-color: #E0E0E0; border-radius: 8px; height: 28px; width: 100%; overflow: hidden; }
+        .bar-fill { height: 100%; border-radius: 8px; display: flex; align-items: center; padding-left: 10px; color: white; font-weight: bold; font-size: 0.9rem; transition: width 0.5s ease; }
+        
+        .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 8px; }
+        .propostas-lista h4 { margin-top: 0; margin-bottom: 8px; font-size: 1rem; color: #333; display: flex; align-items: center; }
+        .propostas-lista ul { margin: 0 0 16px 0; padding-left: 20px; }
+        .propostas-lista li { font-size: 1.1rem; margin-bottom: 12px; line-height: 1.4; }
+        .prop-item { margin-bottom: 16px; border-bottom: 1px solid #DDD; padding-bottom: 12px; }
+        .prop-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+        /* Estilos do Asterisco e Modal */
+        .asterisk { color: #1976D2; cursor: pointer; padding: 0 4px; font-size: 1.2rem; display: inline-block; }
+        .asterisk:hover { color: #0D47A1; }
+        
+        #modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; }
+        .modal-box { background: white; padding: 24px; border-radius: 8px; max-width: 400px; width: 85%; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .btn-fechar-modal { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666; padding: 0; line-height: 1; }
+        .modal-text { font-size: 1.1rem; color: #333; margin-top: 8px; line-height: 1.5; }
+    </style>
+</head>
+<body>
+<div id="app">
+    <div id="lista-candidatos">
+        <div id="lista-cards-cand"></div>
+        <hr class="separator">
+        <div class="candidate-card card-convergencia" onclick="abrirConvergencia()">
+            <span class="candidate-name">Onde eles concordam</span>
+        </div>
+    </div>
+
+    <div id="detalhe-convergencia">
+        <button class="btn-voltar" onclick="voltarParaLista()">← Voltar</button>
+        <div class="detalhe-header">
+            <div class="detalhe-header-info">Onde eles concordam</div>
+        </div>
+        <p style="color: #666; font-style: italic; margin-bottom: 24px; font-size: 1.1rem;">Toque nas barras para ler como cada candidato aborda o tema.</p>
+        <div id="grafico-convergencias"></div>
+    </div>
+
+    <div id="detalhe-candidato">
+        <button class="btn-voltar" onclick="voltarParaLista()">← Voltar</button>
+        <div class="detalhe-header">
+            <div id="header-candidato-detalhe" class="detalhe-header-info"></div>
+        </div>
+        <div class="compare-select-container">
+            <select id="select-comparar" onchange="renderizarGraficos()">
+                <option value="">Comparar com...</option>
+            </select>
+        </div>
+        <div id="grafico-barras"></div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="modal-overlay" onclick="fecharModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+        <button class="btn-fechar-modal" onclick="fecharModal(event)">&times;</button>
+        <p class="modal-text">As propostas do candidato Augusto Cury não foram incluídas na pesquisa original. O VIVA adicionou o candidato seguindo a metodologia e critérios indicados pelo Reglab.</p>
+    </div>
+</div>
+
+<script>
+    const candidatosData = [
+        { id: "flavio", nome: "Flávio Bolsonaro", foto: "FBR280002551544_div.jpg", total: 34, eixos: [ { nome: "Inclusão Digital", valor: 8, max: 15, propostas: ["Bônus de Internet para as Mulheres", "Conectividade às localidades de baixa cobertura", "Escola Brasil por Elas: formação em IA e programação", "Pacote de Conexão para toda a população", "Robótica e Infraestrutura", "Economia Digital no currículo escolar", "Difundir IA para micro, pequenas e médias empresas"] }, { nome: "Fomento a CT&I", valor: 8, max: 15, propostas: ["Política Nacional de Formação de Talentos", "Transferir ensino superior para o Ministério de Ciência, Tecnologia e Inovação", "CAPES e CNPQ: priorizar impacto produtivo", "Aproximar empresas e universidades", "Impulsionar a Bioeconomia", "Incentivo a tecnologias disponíveis", "Elevar participação em patentes de IA", "Gestão das Universidades integrada à ciência"] }, { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: ["Estado como indutor", "Parques tecnológicos", "Expandir incubadoras", "Apoiar as startups de base tecnológica", "Polo Global de data centers"] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Digitalizar serviços do Governo Federal", "Identidade Digital Única", "Assistentes automatizados", "Prontuário eletrônico único", "Digitalização do SUS", "Investir em tecnologia e digitalizar os processos do INSS", "Aplicativo Central da Mulher", "Facilitar denúncias com IA", "Banco Nacional de Vagas"] }, { nome: "Regulação", valor: 4, max: 15, propostas: ["Legislação voltada à liberdade de criar e inovar", "Fortalecer a defesa cibernética do país", "Tesouraço da Censura", "Revogar todos os atos que o atual governo produziu para silenciar seus críticos"] } ] },
+        { id: "lula", nome: "Lula", foto: "FBR280002542548_div.jpg", total: 45, eixos: [ { nome: "Inclusão Digital", valor: 7, max: 15, propostas: ["Oferta de conectividade: reduzir déficit de fibra óptica", "Ampliar 5G no campo", "Política Nacional de Letramento Digital", "Ampliar letramento digital", "Universalizar Novo PAC", "FUST", "Conectividade Rural"] }, { nome: "Fomento a CT&I", valor: 9, max: 15, propostas: ["Sequência ao Programa Conhecimento Brasil", "Uso estratégico do FNDCT", "Infraestrutura computacional soberana", "Desenvolver modelos de linguagens em Português", "Acelerar difusão de IA no setor produtivo", "Investir em P&D", "Formação de talentos", "Fortalecimento da Embrapa", "Fortalecimento da Base Industrial de Defesa"] }, { nome: "Empreend. e Startups", valor: 4, max: 15, propostas: ["Indústria 4.0", "Fomentar o desenvolvimento de tecnologia digital", "Investimento de apoio a pequenas e médias empresas", "Ampliação do Brasil Mais Produtivo"] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Facilitar a experiência de uso de plataformas públicas", "Personalização de serviços", "Aprimorar mecanismos do poder de compra do Estado", "Transformação do Portal da Transparência", "Expandir e melhorar o Programa Celular Seguro", "Integração dos sistemas interfederativos", "IA no SUS", "Modernização tecnológica e saúde", "Aprimorar a regulação da atenção especializada", "Supercentro Brasil de telediagnóstico"] }, { nome: "Regulação", valor: 15, max: 15, propostas: ["Conselho Nacional pela Soberania Digital", "Aprimoramento do ECA Digital", "Regulamentação do uso de telas por faixa etária", "Regulamentação das plataformas de jogos", "Crimes financeiros e cibernéticos", "Lei do direito autoral", "Regulação da IA", "Garantir a Soberania Digital", "Expansão de data centers e infraestrutura de IA", "Economia de dados: regras e infra", "Transparência algorítmica", "Regulação democrática das redes", "Regulação do trabalho mediado por plataforma", "Governança internacional para IA"] } ] },
+        { id: "renan", nome: "Renan Santos", foto: "FBR280002540694_div.jpg", total: 16, eixos: [ { nome: "Inclusão Digital", valor: 0, max: 15, propostas: ["Sem propostas registradas neste eixo."] }, { nome: "Fomento a CT&I", valor: 7, max: 15, propostas: ["Banco nacional de dados genômicos", "Retenção, formação e repatriação de talentos em IA", "Agro-Bio Nacional: Unificação técnica", "Drones agrícolas e IA", "Projeto Abaporu: laboratório nacional de IA", "Programa de retenção de talentos"] }, { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: ["Redução de impostos sobre empresas de tecnologia", "Facilitação da distribuição de stock options", "Ampliação do venture capital por fundos brasileiros", "Incentivo instalação de data centers", "Zonas Econômicas de Alta Inteligência (ZEAIs)"] }, { nome: "Governo Digital", valor: 5, max: 15, propostas: ["Telemedicina e diagnóstico por IA", "Vigilância epidemiológica preditiva em tempo real", "PRONTO: prontuário eletrônico nacional interoperável", "Integração do Genomas Brasil ao prontuário do SUS"] }, { nome: "Regulação", valor: 1, max: 15, propostas: ["Arcabouço regulatório"] } ] },
+        { id: "zema", nome: "Romeu Zema", foto: "FBR280002539826_div.jpg", total: 35, eixos: [ { nome: "Inclusão Digital", valor: 6, max: 15, propostas: ["Abertura de novas faixas de espectro para o 5G", "Internet de qualidade em unidades públicas de saúde", "Modernizar a Base Nacional Comum Curricular", "Conectividade rural", "Telemedicina", "Modernizar formação"] }, { nome: "Fomento a CT&I", valor: 13, max: 15, propostas: ["Transferir a gestão do ensino superior para o Min. de Ciência", "Incentivos Financeiros", "Financiamento de bolsas STEM", "Simplificar reconhecimento de qualificações e vistos", "Concentrar recursos em instituições com histórico", "Flexibilização acadêmica para docentes", "Desburocratização regulatória para atrair P&D", "Cursos técnicos em tecnologia com parc. privadas", "Atração de investimento estrangeiro", "Conexão entre universidades e setor farmacêutico"] }, { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: ["Venture capital, vesting e equity no mercado", "Atração de investimento intl. em data centers", "Energia limpa para atrair IA", "Facilitar a entrada de capital estrangeiro", "Conectar startups de saúde aos hospitais"] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Digitalização dos serviços públicos", "Divulgação do custo de cada serviço público", "Adoção de tecnologias do mercado", "Integração de dados entre estados e municípios", "Dados do governo em formato aberto e fim do sigilo", "Prontuário eletrônico", "Integração dos sistemas de saúde público e privado", "Otimização de filas com direcionamento inteligente"] }, { nome: "Regulação", valor: 4, max: 15, propostas: ["Modernização do marco regulatório da edição gênica", "Vedar a exclusão de perfis e moderação por plataformas", "Marco regulatório de IA restrito a danos concretos", "Abuso de autoridade: Censura e remoção de conteúdo"] } ] },
+        { id: "caiado", nome: "Ronaldo Caiado", foto: "FBR280002551932_div.jpg", total: 47, eixos: [ { nome: "Inclusão Digital", valor: 9, max: 15, propostas: ["Metas de conectividade rural até 2030", "Conectividade de qualidade para todos municípios", "FUST a serviço de escolas e saúde", "Universalizar energia e conectividade", "Internet de qualidade", "Infraestrutura digital", "Levar fibra ao interior e usar satélites de órbita baixa", "Ampliar recondicionamento de equipamentos", "Reduzir carga tributária do smartphone de entrada"] }, { nome: "Fomento a CT&I", valor: 10, max: 15, propostas: ["Execução plurianual do FNDCT", "Formação e retenção de talentos em IA", "Garantir capacidade computacional", "Semicondutores e computação quântica", "Estimular satélites de observação", "Concentrar missões em bioeconomia e agro digital", "Atualizar os currículos", "Centros de excelência em IA aplicada ao agro", "Rede Amazônica de Biotecnologia"] }, { nome: "Empreend. e Startups", valor: 9, max: 15, propostas: ["Modernização da Lei do Bem", "Crédito, subvenção e encomenda tecnológica", "Regime tributário para bens de capital e data center", "Estimular a indústria nacional de automação", "Estimular o investimento privado em digitalização", "Criar Programa Nacional de Indústria 4.0 e IA", "Apoiar pequenas e médias empresas", "Estimular startups de soluções de IA"] }, { nome: "Governo Digital", valor: 13, max: 15, propostas: ["Organizar bases públicas interoperáveis", "Criar centro de governo digital", "Usar identidade digital gov.br como plataforma comum", "PIX, gov.br, open finance", "Identidade digital e canal único", "Identidade clínica digital", "Práticas de adoção de IA e modernizar UBS", "Plataforma de análise de riscos em gastos públicos", "Digitalizar licenças e outorgas", "Digitalizar acervos e implantar processos digitais"] }, { nome: "Regulação", valor: 8, max: 15, propostas: ["Marco legal centrado no uso, no dano e no risco concreto", "Regulação e proteção de crianças e adolescentes", "Mercados digitais competitivos", "Diplomacia a serviço do acesso do Brasil à IA", "Política Nacional de cibersegurança", "LGPD e Direitos autorais", "Sistema nac. de enfrentamento a crimes digitais"] } ] },
+        { id: "cury", nome: "Augusto Cury", foto: "FBR280002551547_div.jpg", total: 27, eixos: [ { nome: "Inclusão Digital", valor: 3, max: 15, propostas: ["Universalização da Conectividade em Locais Essenciais: Garantia de internet de alta velocidade em escolas públicas, hospitais, áreas rurais e remotas.", "Programa Comunidade 4.0: Implantação de infraestrutura de conectividade digital em favelas e comunidades periféricas.", "Inclusão Tecnológica Nacional: Expansão de programas de capacitação tecnológica e acesso universal a ferramentas digitais."] }, { nome: "Fomento a CT&I", valor: 6, max: 15, propostas: ["Política Nacional de Semicondutores: Incentivos para atração de investimentos em produção nacional de chips, microeletrônica e sistemas embarcados.", "Indústria 4.0 e Automação: Estímulo a investimentos em robótica, inteligência artificial, IoT, automação industrial e computação em nuvem.", "Formação Avançada em IA: Concessão de milhares de bolsas de mestrado e doutorado focadas em IA aplicada aos setores produtivos.", "Universidade Empreendedora e Patentes: Apoio a startups universitárias, laboratórios de pesquisa aplicada e fomento ao registro de patentes.", "Polo de IA e Indústria 4.0 na Zona Franca de SP: Conversão da Zona Franca de São Paulo no principal polo de desenvolvimento de IA, robótica e softwares exportáveis.", "Investimento em CT&I Estratégica: Ampliação de aportes públicos e privados em áreas críticas (biotecnologia, defesa, saúde e energia)."] }, { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: ["Democratização da IA para PMEs: Capacitação e incentivos para micro e pequenas empresas adotarem IA na automação e aumento de produtividade.", "Banco do Empreendedor: Acesso a crédito produtivo orientado e desburocratizado para startups e pequenos negócios.", "Habitats de Inovação para Jovens: Fomento a incubadoras, parques tecnológicos e capacitação em economia criativa e negócios digitais.", "Zonas de Exportação de Tecnologia (ZONE): Regime tributário e incentivos simplificados para empresas de tecnologia e sistemas digitais exportáveis.", "Estímulo a Cooperativas de Tecnologia: Apoio à criação de cooperativas voltadas a IA, robótica, softwares e plataformas digitais."] }, { nome: "Governo Digital", valor: 10, max: 15, propostas: ["Governo Totalmente Digital: Integração de serviços públicos federais em plataformas digitais para eliminação de filas e burocracia.", "IA no Controle de Gastos Públicos: Cruzamento automatizado de dados para identificação de fraudes, sobrepreços e ineficiências.", "Projeto FATO / Segurança 4.0: Uso de câmeras inteligentes, reconhecimento de padrões, drones e análise preditiva por IA no policiamento.", "Tele Saúde Brasil: Plataforma nacional de medicina digital com triagem via IA e meta de atendimento em até 30 minutos.", "Prontuário Eletrônico Único e SUS Digital: Integração digital de dados clínicos e hospitais em rede pública unificada.", "Programa SEO (Sociedade Está de Olho): Plataforma de dados abertos e transparência ativa com monitoramento por algoritmos de IA.", "Regularização Fundiária Digital: Mapeamento de comunidades via georreferenciamento, satélites, drones e IA.", "Detecção Inteligente de Incêndios (Floresta Viva-BR): Monitoramento ambiental integrado por satélites, sensores IoT e IA preditiva.", "Plataforma Digital de Energias Renováveis (PENER-BR): Mapeamento do potencial energético nacional com inteligência artificial.", "Plataforma Nacional de Cooperativismo: Ambiente digital integrado para gestão, crédito e comércio de cooperativas."] }, { nome: "Regulação", valor: 3, max: 15, propostas: ["Marco Legal Seguro da IA: Criação de arcabouço regulatório para desenvolvimento e uso ético/seguro da IA.", "Soberania Digital e Cibersegurança: Proteção de dados estratégicos do país e fortalecimento da cibersegurança conforme a LGPD.", "Cidadania e Proteção Digital de Crianças e Adolescentes: Políticas de conscientização e salvaguardas contra o impacto nocivo de algoritmos em jovens."] } ] }
+    ];
+
+    const convergenciasData = [
+        { tema: "Atração de Data Centers e Infraestrutura de Dados", prop: [ { c: "Lula", t: "Expansão de data centers vinculada a salvaguardas socioambientais e regulação." }, { c: "Ronaldo Caiado", t: "Regime tributário próprio para incentivo a bens de capital e serviços de data center." }, { c: "Romeu Zema", t: "Atração de investimento internacional em data centers atrelada ao uso de energia limpa." }, { c: "Flávio Bolsonaro", t: "Criação do 'Polo Global de Data Centers'." }, { c: "Renan Santos", t: "Incentivo à instalação de data centers em Zonas Econômicas de Alta Inteligência (ZEAIs)." }, { c: "Augusto Cury", t: "Atração e infraestrutura de data centers para suporte à gestão e soberania." } ] },
+        { tema: "IA Aplicada à Saúde e Prontuário Eletrônico Unificado", prop: [ { c: "Lula", t: "Telemedicina no SUS e criação do Supercentro Brasil de Telediagnóstico." }, { c: "Ronaldo Caiado", t: "Identidade clínica digital e modernização de Unidades Básicas de Saúde (UBS)." }, { c: "Romeu Zema", t: "Prontuário eletrônico e integração dos sistemas de saúde público e privado." }, { c: "Flávio Bolsonaro", t: "Prontuário eletrônico único e digitalização dos processos do SUS." }, { c: "Renan Santos", t: "Plataforma PRONTO (prontuário eletrônico nacional interoperável) e vigilância epidemiológica preditiva." }, { c: "Augusto Cury", t: "Tele Saúde Brasil (triagem por IA em 30 min) e Prontuário Eletrônico Único do SUS." } ] },
+        { tema: "IA no Setor Público e Combate à Corrupção / Gestão", prop: [ { c: "Lula", t: "Transformação do Portal da Transparência em plataforma inteligente com IA." }, { c: "Ronaldo Caiado", t: "Plataforma de análise de riscos em gastos públicos com IA e dados abertos." }, { c: "Romeu Zema", t: "Adoção de tecnologias do mercado para direcionamento inteligente de processos e filas." }, { c: "Flávio Bolsonaro", t: "Assistentes automatizados no governo e IA para segurança/prevenção." }, { c: "Renan Santos", t: "Uso de IA e dados integrados para diagnóstico público e laboratórios." }, { c: "Augusto Cury", t: "IA no controle de gastos e combate a fraudes (Programa SEO) e na Segurança Pública 4.0 (Projeto FATO)." } ] },
+        { tema: "Parcerias Universidade-Empresa e Formação de Talentos", prop: [ { c: "Lula", t: "Programa Conhecimento Brasil e formação de pesquisadores em áreas estratégicas." }, { c: "Ronaldo Caiado", t: "Centros de excelência em IA e formação/retenção de talentos." }, { c: "Romeu Zema", t: "Integração universidade-empresa (4 propostas) e atração de investimento privado em P&D." }, { c: "Flávio Bolsonaro", t: "Política Nacional de Formação de Talentos e expansão de parques tecnológicos/incubadoras." }, { c: "Renan Santos", t: "Projeto Abaporu (laboratório nacional) e formação/repatriamento de talentos em IA." }, { c: "Augusto Cury", t: "Concessão de bolsas de mestrado/doutorado em IA aplicada e incentivo a startups universitárias." } ] },
+        { tema: "Proteção de Crianças e Adolescentes no Ambiente Digital", prop: [ { c: "Lula", t: "Aprimoramento do ECA Digital, regulação de telas por faixa etária e regulação de jogos digitais." }, { c: "Ronaldo Caiado", t: "Regras de responsabilidade para plataformas e implementação da proteção a crianças/jovens." }, { c: "Augusto Cury", t: "Projeto de Lei Augusto Cury contra predadores sexuais e regulação de conteúdos nocivos/algoritmos para jovens." } ] },
+        { tema: "Capacidade Nacional e Política de Semicondutores", prop: [ { c: "Ronaldo Caiado", t: "Construção de capacidade nacional em semicondutores e computação quântica." }, { c: "Augusto Cury", t: "Política Nacional de Semicondutores/microeletrônica e transformação da Zona Franca de SP em polo de hardware e IA." } ] }
+    ];
+
+    let candidatoAtual = null;
+
+    function formatName(name) {
+        if (name === "Augusto Cury") {
+            return 'Augusto Cury<span class="asterisk" onclick="abrirModal(event)" title="Aviso sobre este candidato">*</span>';
+        }
+        return name;
+    }
+
+    function iniciar() {
+        const lista = document.getElementById('lista-cards-cand');
+        const select = document.getElementById('select-comparar');
+        candidatosData.forEach(cand => {
+            lista.innerHTML += '<div class="candidate-card" onclick="abrirDetalhe(\'' + cand.id + '\')"><div class="candidate-profile"><img src="' + cand.foto + '" class="candidate-photo"> <span class="candidate-name">' + formatName(cand.nome) + '</span></div><span class="candidate-total">' + cand.total + ' propostas</span></div>';
+            select.innerHTML += '<option value="' + cand.id + '">' + cand.nome + (cand.id === 'cury' ? '*' : '') + '</option>';
+        });
+        renderizarListaConvergencias();
+    }
+
+    function renderizarListaConvergencias() {
+        const container = document.getElementById('grafico-convergencias');
+        container.innerHTML = '';
+        convergenciasData.forEach((conv, i) => {
+            let html = '<div class="bar-container" onclick="toggleProps(\'conv-' + i + '\')">';
+            html += '<div class="bar-label">' + conv.tema + '</div>';
+            html += '<div class="bar-track"><div class="bar-fill" style="width:100%; background:#B0BEC5; color:#37474F; padding-left:16px;">' + conv.prop.length + ' candidatos concordam</div></div></div>';
+            
+            let propsHtml = '<div class="propostas-lista" id="conv-' + i + '" style="border-left: 6px solid #90A4AE;">';
+            conv.prop.forEach(p => {
+                propsHtml += '<div class="prop-item"><strong>' + formatName(p.c) + ':</strong><br>' + p.t + '</div>';
+            });
+            propsHtml += '</div>';
+            
+            container.innerHTML += html + propsHtml;
+        });
+    }
+
+    function abrirConvergencia() {
+        document.getElementById('lista-candidatos').style.display = 'none';
+        document.getElementById('detalhe-convergencia').style.display = 'block';
+    }
+
+    function abrirDetalhe(id) {
+        candidatoAtual = candidatosData.find(c => c.id === id);
+        document.getElementById('lista-candidatos').style.display = 'none';
+        document.getElementById('detalhe-candidato').style.display = 'block';
+        document.getElementById('header-candidato-detalhe').innerHTML = '<img src="' + candidatoAtual.foto + '" class="candidate-photo"><span class="candidate-name">' + formatName(candidatoAtual.nome) + '</span>';
+        document.getElementById('select-comparar').value = "";
+        renderizarGraficos();
+    }
+
+    function renderizarGraficos() {
+        const idRival = document.getElementById('select-comparar').value;
+        const rival = idRival ? candidatosData.find(c => c.id === idRival) : null;
+        const container = document.getElementById('grafico-barras');
+        container.innerHTML = '';
+
+        candidatoAtual.eixos.forEach((eixo, i) => {
+            const eixoRival = rival ? rival.eixos[i] : null;
+            const pct = (eixo.valor / 15) * 100;
+            const cor = "hsl(210, 80%, " + (75 - (eixo.valor / 15) * 45) + "%)";
+            
+            let html = '<div class="bar-container" onclick="toggleProps(\'prop-' + i + '\')">';
+            html += '<div class="bar-label">' + eixo.nome + '</div>';
+            html += '<div class="compare-row">';
+            html += '<div class="track-col"><span class="track-name">' + formatName(candidatoAtual.nome) + ' (' + eixo.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pct + '%; background:' + cor + ';"></div></div></div>';
+            
+            if(rival) {
+                const pctRival = (eixoRival.valor / 15) * 100;
+                html += '<div class="track-col"><span class="track-name">' + formatName(rival.nome) + ' (' + eixoRival.valor + ')</span><div class="bar-track"><div class="bar-fill" style="width:' + pctRival + '%; background:hsl(0, 0%, ' + (80 - (eixoRival.valor / 15) * 40) + '%);"></div></div></div>';
+            }
+            html += '</div></div>';
+
+            let propsHtml = '<div class="propostas-lista" id="prop-' + i + '" style="border-left: 6px solid ' + cor + '">';
+            propsHtml += '<h4>' + formatName(candidatoAtual.nome) + '</h4><ul>';
+            eixo.propostas.forEach(p => propsHtml += '<li>' + p + '</li>');
+            propsHtml += '</ul>';
+            if(rival) {
+                propsHtml += '<h4>' + formatName(rival.nome) + '</h4><ul>';
+                eixoRival.propostas.forEach(p => propsHtml += '<li>' + p + '</li>');
+                propsHtml += '</ul>';
+            }
+            propsHtml += '</div>';
+            container.innerHTML += html + propsHtml;
+        });
+    }
+
+    function toggleProps(id) {
+        const el = document.getElementById(id);
+        el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    function voltarParaLista() {
+        document.getElementById('detalhe-convergencia').style.display = 'none';
+        document.getElementById('detalhe-candidato').style.display = 'none';
+        document.getElementById('lista-candidatos').style.display = 'block';
+    }
+
+    function abrirModal(e) {
+        e.stopPropagation();
+        document.getElementById('modal-overlay').style.display = 'flex';
+    }
+
+    function fecharModal(e) {
+        if(e) e.stopPropagation();
+        document.getElementById('modal-overlay').style.display = 'none';
+    }
+
+    iniciar();
+</script>
+</body>
+</html>
