@@ -49,9 +49,20 @@
         .compare-select-container { text-align: right; margin-bottom: 20px; }
         .compare-select-container select { padding: 6px 12px; font-size: 0.9rem; border-radius: 4px; border: 1px solid #D0D0D0; background-color: transparent; color: #666; cursor: pointer; outline: none; width: 100%; max-width: 250px;}
         
-        /* Gráficos de Quadradinhos */
-        .bar-container { margin-bottom: 20px; cursor: pointer; }
-        .bar-label { font-size: 1.1rem; font-weight: bold; margin-bottom: 8px; text-align: center;}
+        /* Gráficos de Quadradinhos e Contêiner de Eixos */
+        .bar-container { margin-bottom: 20px; cursor: pointer; padding: 12px; border-radius: 8px; border: 1px solid transparent; transition: all 0.2s ease; background-color: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .bar-container:hover { border-color: #E0E0E0; box-shadow: 0 4px 8px rgba(0,0,0,0.08); }
+        
+        /* Nova estilização do cabeçalho do Eixo com Affordance (Setas e Badges) */
+        .bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .bar-label { font-size: 1.15rem; font-weight: bold; color: var(--text-color); }
+        .bar-action-badge { display: flex; align-items: center; gap: 6px; background-color: #F0F0F0; color: #555; padding: 4px 10px; border-radius: 16px; font-size: 0.85rem; font-weight: bold; transition: all 0.2s ease; }
+        .seta-eixo { transition: transform 0.2s ease; display: inline-block; font-size: 0.8rem; }
+        .seta-eixo.aberta { transform: rotate(90deg); }
+        
+        /* Efeito Verde Limão no Hover */
+        .bar-container:hover .bar-action-badge { background-color: var(--brand-highlight); color: var(--brand-color); }
+        
         .compare-row { display: flex; gap: 10px; align-items: flex-start; }
         .track-col { flex: 1; display: flex; flex-direction: column; }
         .track-name { font-size: 0.9rem; margin-bottom: 6px; color: #555; font-weight: bold; display: flex; align-items: center;}
@@ -62,7 +73,7 @@
         .square.filled-rival { background-color: var(--brand-gray); }
         
         /* Lista de Propostas (Eixos) */
-        .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 12px; }
+        .propostas-lista { display: none; background-color: #F5F5F5; padding: 16px; border-radius: 8px; margin-top: 16px; border-left: 6px solid var(--brand-color); }
         .propostas-lista h4 { margin-top: 0; margin-bottom: 12px; font-size: 1.1rem; color: #333; display: flex; align-items: center; }
         .propostas-lista ul { margin: 0; padding: 0; list-style: none; }
         
@@ -217,7 +228,7 @@
                     { curto: "Brasil Mais Produtivo", original: "O Brasil Mais Produtivo será ampliado para alcançar mais micro, pequenas e médias empresas e fortalecer o empreendedorismo", subs: ["Capital e financiamento"] }
                 ]}, 
                 { nome: "Governo Digital", valor: 10, max: 15, propostas: [
-                    { curto: "Plataformas públicas", original: "Vamos buscar alavancar novas iniciativas que melhorem e facilitem a experiência de uso de plataformas públicas, como o Gov. br", subs: ["Serviços digitais ao cidadão"] },
+                    { curto: "Plataformas públicas", original: "Vamos buscar alavancar novas iniciativas que melhorem e facilitem a experiência de uso de platforms públicas, como o Gov. br", subs: ["Serviços digitais ao cidadão"] },
                     { curto: "Personalização de serviços", original: "na construção de infraestruturas públicas digitais que deem suporte à personalização dos serviços", subs: ["Infraestrutura e dados do Estado"] },
                     { curto: "Compras do Estado", original: "vamos aprimorar os mecanismos de utilização do poder de compra do Estado em todos os níveis da federação", subs: ["Compras públicas de inovação"] },
                     { curto: "Portal da Transparência", original: "O Portal da Transparência receberá investimentos para evoluir para uma plataforma inteligente baseada em dados abertos e inteligência artificial", subs: ["Transparência e dados abertos", "IA no setor público"] },
@@ -372,7 +383,7 @@
                     { curto: "IA nas UBS", original: "Modernizar UBS com conectividade, prontuário interoperável, prescrição eletrônica, telemedicina", subs: ["Serviços digitais ao cidadão"] },
                     { curto: "Análise de gastos", original: "Implantar plataforma nacional de análise de riscos em gastos públicos, com inteligência artificial, para identificar fraudes", subs: ["IA no setor público"] },
                     { curto: "Digitalizar licenças", original: "Digitalizar licenças, outorgas, autos e desembargos, com linguagem clara e rastreabilidade", subs: ["Compras e gestão"] },
-                    { curto: "Processos digitais", original: "Implantar processos digitais, prazos, gestão por risco, transparência de títulos e beneficiários finais", subs: ["Compras e gestão"] },
+                    { curto: "Processos digitais", original: "Implantar processos digitais, prazos, gestão por risco, transparência de titles e beneficiários finais", subs: ["Compras e gestão"] },
                     { curto: "Dados pesquisa", original: "Ampliar levantamentos geofísicos, geoquímicos e hidrogeológicos, digitalizar acervos e disponibilizar dados de qualidade para pesquisa e investimento", subs: ["Transparência e dados abertos"] },
                     { curto: "Vacinas e fila", original: "Reunir vacinas, consultas, exames, receitas, resultados, posição na fila, alertas e remarcação em um canal nacional autenticado", subs: ["Serviços digitais ao cidadão"] },
                     { curto: "Validação de IA", original: "Adotar IA somente com validação, transparência, supervisão profissional, avaliação de impacto e auditoria", subs: ["IA no setor público"] }
@@ -402,7 +413,7 @@
                     { curto: "Indústria 4.0 e Automação", original: "Estimularemos investimentos em robótica, inteligência artificial, internet das coisas, automação industrial, computação em nuvem e manufatura avançada.", subs: ["Áreas estratégicas", "Ecossistema e habitats"] },
                     { curto: "Formação Avançada em IA", original: "Estimularemos milhares de profissionais a fazerem mestrado e doutorado em inteligência artificial aplicada a produtos inovadores em todas as áreas do ecossistema econômico.", subs: ["Formação de talentos"] },
                     { curto: "Universidade Empreendedora e Patentes", original: "Os campi universitários devem tornar-se ambientes de inovação, com incubadoras, laboratórios tecnológicos, centros de pesquisa aplicada e programas de incentivo à criação de startups [...] estimular o registro de patentes, fortalecer a cultura da propriedade intelectual e ampliar a transferência de tecnologia para o setor produtivo.", subs: ["Relação universidade-empresa", "Ecossistema e habitats"] },
-                    { curto: "Polo de IA e Indústria 4.0 na Zona Franca de SP", original: "Zona Franca de São Paulo: Transformada no principal polo brasileiro de Indústria 4.0, inteligência artificial, semicondutores, robótica, automação, drones, softwares exportáveis e tecnologias avançadas.", subs: ["Ecossistema e habitats", "Áreas estratégicas"] },
+                    { curto: "Polo de IA e Indústria 4.0 na Zona Franca de SP", original: "Zona Franca de São Paulo: Transformada no principal polo brasileiro de Indústria 4.0, inteligência artificial, semicondutores, robótica, automação, drones, softwares exportáveis e technologies avançadas.", subs: ["Ecossistema e habitats", "Áreas estratégicas"] },
                     { curto: "Investimento em CT&I Estratégica", original: "A utilização de satélites, drones, sensores, inteligência artificial e análise de dados permitirá maior produtividade com menor impacto ambiental.", subs: ["IA no setor público", "Áreas estratégicas"] }
                 ]}, 
                 { nome: "Empreend. e Startups", valor: 5, max: 15, propostas: [
@@ -579,10 +590,16 @@
 
         candidatoAtual.eixos.forEach((eixo, i) => {
             const eixoRival = rival ? rival.eixos[i] : null;
-            const max = 15; // Total máximo de propostas mapeadas
+            const max = 15;
             
-            let html = '<div class="bar-container" onclick="toggleEixo(\'prop-' + i + '\')">';
-            html += '<div class="bar-label">' + eixo.nome + '</div>';
+            let html = '<div class="bar-container" onclick="toggleEixo(\'prop-' + i + '\', this)">';
+            
+            // Cabeçalho com Seta e Badge de Ação
+            html += '<div class="bar-header">';
+            html += '  <span class="bar-label">' + eixo.nome + '</span>';
+            html += '  <div class="bar-action-badge">Ver propostas <span class="seta-eixo">►</span></div>';
+            html += '</div>';
+
             html += '<div class="compare-row">';
             
             // Candidato Principal
@@ -605,7 +622,7 @@
             
             html += '</div></div>';
 
-            let propsHtml = '<div class="propostas-lista" id="prop-' + i + '" style="border-left: 6px solid var(--brand-color)">';
+            let propsHtml = '<div class="propostas-lista" id="prop-' + i + '">';
             propsHtml += '<h4>' + formatName(candidatoAtual.nome) + '</h4><ul>';
             propsHtml += buildPropostasHTML(eixo);
             propsHtml += '</ul>';
@@ -620,12 +637,16 @@
         });
     }
 
-    function toggleEixo(id) {
+    function toggleEixo(id, elementoConteneiner) {
         const el = document.getElementById(id);
+        const seta = elementoConteneiner.querySelector('.seta-eixo');
+        
         if (el.style.display === 'block') {
             el.style.display = 'none';
+            if (seta) seta.classList.remove('aberta');
         } else {
             el.style.display = 'block';
+            if (seta) seta.classList.add('aberta');
             setTimeout(() => {
                 el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }, 150);
